@@ -1,0 +1,13 @@
+.vercel
+node_modules
+.env
+.env.local
+.env*.local
+.next
+
+# IDE & OS artifacts
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

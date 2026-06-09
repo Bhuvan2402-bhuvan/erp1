@@ -1,0 +1,90 @@
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
+import { validate, createEventSchema } from '@/lib/validations';
+
+// GET /api/events — List events (all authenticated users)
+export const GET = withAuth(async (req, { user }) => {
+  try {
+    const { dbUser } = user;
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+    const type = searchParams.get('type');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (status) where.status = status;
+    if (type) where.type = type;
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          _count: { select: { registrations: true, attendances: true, photos: true } },
+          ...(dbUser.student ? {
+            registrations: {
+              where: { studentId: dbUser.student.id }
+            }
+          } : {})
+        }
+      }),
+      prisma.event.count({ where })
+    ]);
+
+    const formattedEvents = events.map(e => {
+      const isRegistered = e.registrations ? e.registrations.length > 0 : false;
+      const { registrations, ...rest } = e;
+      return { ...rest, isRegistered };
+    });
+
+    return NextResponse.json({
+      events: formattedEvents,
+      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    }, { status: 200 });
+  } catch (error) {
+    return sanitizeErrorResponse(error, 'Error fetching events');
+  }
+});
+
+// POST /api/events — Create event (Admin, Faculty, Coordinator)
+export const POST = withAuth(async (req, { user }) => {
+  try {
+    const { dbUser } = user;
+
+    // Only Admin, Faculty, or Coordinators can create events
+    const isCoordinator = dbUser.student?.isCoordinator;
+    if (dbUser.role === 'STUDENT' && !isCoordinator) {
+      return NextResponse.json({ message: 'Only coordinators can create events' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { success, data: validated, error: validationError } = validate(createEventSchema, body);
+
+    if (!success) {
+      return NextResponse.json({ message: validationError }, { status: 400 });
+    }
+
+    const { title, description, date, endDate, location, type } = validated;
+
+    const event = await prisma.event.create({
+      data: {
+        title,
+        description,
+        date: new Date(date),
+        endDate: endDate ? new Date(endDate) : null,
+        location,
+        type: type || 'ACTIVITY',
+        createdById: dbUser.id
+      }
+    });
+
+    return NextResponse.json({ message: 'Event created', event }, { status: 201 });
+  } catch (error) {
+    return sanitizeErrorResponse(error, 'Error creating event');
+  }
+});

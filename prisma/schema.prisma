@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ─────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  FACULTY
+  STUDENT
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+}
+
+enum EventType {
+  ACTIVITY
+  CAMP
+  WORKSHOP
+  RALLY
+  AWARENESS
+}
+
+enum EventStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+// ─── Core Models ───────────────────────────────────────────
+
+model User {
+  id              String         @id @default(uuid())
+  supabaseAuthId  String         @unique
+  email           String         @unique
+  name            String
+  phone           String?
+  bio             String?
+  avatarUrl       String?
+  role            Role           @default(STUDENT)
+  approvalStatus  ApprovalStatus @default(PENDING)
+  isBlocked       Boolean        @default(false)
+  departmentId    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  department        Department?      @relation(fields: [departmentId], references: [id])
+  student           Student?
+  faculty           Faculty?
+  sentMessages      Message[]        @relation("SentMessages")
+  receivedMessages  Message[]        @relation("ReceivedMessages")
+  notifications     Notification[]
+  createdEvents     Event[]          @relation("EventCreator")
+  markedAttendances EventAttendance[] @relation("AttendanceMarker")
+  uploadedPhotos    EventPhoto[]     @relation("PhotoUploader")
+  resolvedIssues    Issue[]          @relation("IssueResolver")
+  publicMessages    PublicMessage[]
+
+  @@index([email])
+  @@index([role])
+  @@index([role, approvalStatus])
+  @@index([departmentId])
+  @@map("users")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  students  Student[]
+  faculty   Faculty[]
+
+  @@index([code])
+  @@map("departments")
+}
+
+// ─── Role-Specific Profiles ────────────────────────────────
+
+model Student {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  rollNo        String   @unique
+  regNo         String?  @unique
+  year          Int
+  section       String
+  semester      Int
+  departmentId  String
+  isCoordinator Boolean  @default(false)
+  mentorId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department         Department          @relation(fields: [departmentId], references: [id])
+  mentor             Faculty?            @relation(fields: [mentorId], references: [id])
+  eventRegistrations EventRegistration[]
+  eventAttendances   EventAttendance[]
+  issues             Issue[]
+  certificates       Certificate[]
+
+  @@index([rollNo])
+  @@index([departmentId])
+  @@index([year, section])
+  @@map("students")
+}
+
+model Faculty {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  employeeId   String   @unique
+  designation  String?
+  departmentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id])
+  mentees  Student[]
+
+  @@index([employeeId])
+  @@index([departmentId])
+  @@map("faculty")
+}
+
+// ─── NSS Events ────────────────────────────────────────────
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime
+  endDate     DateTime?
+  location    String?
+  type        EventType @default(ACTIVITY)
+  status      EventStatus @default(UPCOMING)
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy     User               @relation("EventCreator", fields: [createdById], references: [id])
+  registrations EventRegistration[]
+  attendances   EventAttendance[]
+  photos        EventPhoto[]
+
+  @@index([date])
+  @@index([status])
+  @@index([createdById])
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String             @id @default(uuid())
+  eventId   String
+  studentId String
+  status    RegistrationStatus @default(REGISTERED)
+  createdAt DateTime           @default(now())
+
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@map("event_registrations")
+}
+
+model EventAttendance {
+  id         String   @id @default(uuid())
+  eventId    String
+  studentId  String
+  present    Boolean  @default(false)
+  markedById String
+  createdAt  DateTime @default(now())
+
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User    @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([eventId, studentId])
+  @@index([studentId])
+  @@index([eventId])
+  @@map("event_attendance")
+}
+
+model EventPhoto {
+  id           String   @id @default(uuid())
+  eventId      String
+  url          String
+  caption      String?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  event      Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation("PhotoUploader", fields: [uploadedById], references: [id])
+
+  @@index([eventId])
+  @@map("event_photos")
+}
+
+// ─── Issues & Certificates ─────────────────────────────────
+
+model Issue {
+  id           String    @id @default(uuid())
+  studentId    String
+  title        String
+  description  String
+  status       String    @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  resolvedBy User?   @relation("IssueResolver", fields: [resolvedById], references: [id])
+
+  @@index([studentId])
+  @@index([status])
+  @@map("issues")
+}
+
+model Certificate {
+  id          String   @id @default(uuid())
+  studentId   String
+  title       String
+  description String?
+  fileUrl     String
+  createdAt   DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("certificates")
+}
+
+// ─── Messaging ─────────────────────────────────────────────
+
+model Message {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId, receiverId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model PublicMessage {
+  id        String   @id @default(uuid())
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([createdAt])
+  @@map("public_messages")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, ALERT
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
