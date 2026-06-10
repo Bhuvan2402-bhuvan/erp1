@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }) {
 
   const tabs = [
     { id: 'overview', name: 'Overview', href: '/admin/overview', basePath: '/admin', icon: 'LayoutDashboard' },
+    { id: 'approvals', name: 'Approvals', href: '/admin/approvals', basePath: '/admin/approvals', icon: 'UserCheck' },
     { id: 'volunteers', name: 'Volunteers', href: '/admin/volunteers', basePath: '/admin/volunteers', icon: 'Users' },
     { id: 'faculty', name: 'Faculty', href: '/admin/faculty', basePath: '/admin/faculty', icon: 'GraduationCap' },
     { id: 'events', name: 'Events', href: '/admin/events', basePath: '/admin/events', icon: 'Calendar' },

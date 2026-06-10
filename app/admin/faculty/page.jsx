@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Check, Key, ShieldAlert } from 'lucide-react';
+import { Check, Key, ShieldAlert, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminFaculty() {
@@ -71,7 +71,12 @@ export default function AdminFaculty() {
                 </td>
                 <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-medium ${f.user?.approvalStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{f.user?.approvalStatus}</span></td>
                 <td className="p-4 text-right space-x-1">
-                  {f.user?.approvalStatus === 'PENDING' && <button onClick={() => handleUpdateUser(f.userId, { approvalStatus: 'APPROVED' })} className="p-1.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200"><Check className="w-4 h-4" /></button>}
+                  {f.user?.approvalStatus === 'PENDING' && (
+                    <>
+                      <button onClick={() => handleUpdateUser(f.userId, { approvalStatus: 'APPROVED' })} className="p-1.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200" title="Approve"><Check className="w-4 h-4" /></button>
+                      <button onClick={() => handleUpdateUser(f.userId, { approvalStatus: 'REJECTED' })} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Reject"><X className="w-4 h-4" /></button>
+                    </>
+                  )}
                   <button onClick={() => handleResetPassword(f.userId)} className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200" title="Reset Password"><Key className="w-4 h-4" /></button>
                   <button onClick={() => handleUpdateUser(f.userId, { isBlocked: !f.user?.isBlocked })} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Block/Unblock"><ShieldAlert className="w-4 h-4" /></button>
                 </td>

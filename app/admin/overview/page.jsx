@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Users, GraduationCap, Clock, BookOpen,
   Calendar, AlertTriangle, RefreshCw, TrendingUp
@@ -39,12 +40,12 @@ function SkeletonList({ rows = 4 }) {
 }
 
 const STAT_CARDS = [
-  { key: 'totalVolunteers', label: 'Volunteers', icon: Users,        color: 'blue'   },
-  { key: 'totalFaculty',    label: 'Faculty',    icon: GraduationCap, color: 'emerald'},
-  { key: 'pendingApprovals',label: 'Pending',    icon: Clock,         color: 'amber'  },
-  { key: 'totalDepartments',label: 'Branches',   icon: BookOpen,      color: 'indigo' },
-  { key: 'totalEvents',     label: 'Events',     icon: Calendar,      color: 'purple' },
-  { key: 'openIssues',      label: 'Open Issues',icon: AlertTriangle,  color: 'rose'   },
+  { key: 'totalVolunteers', label: 'Volunteers', icon: Users,        color: 'blue',    href: '/admin/volunteers' },
+  { key: 'totalFaculty',    label: 'Faculty',    icon: GraduationCap, color: 'emerald', href: '/admin/faculty'    },
+  { key: 'pendingApprovals',label: 'Pending',    icon: Clock,         color: 'amber',   href: '/admin/approvals'  },
+  { key: 'totalDepartments',label: 'Branches',   icon: BookOpen,      color: 'indigo',  href: '/admin/branches'   },
+  { key: 'totalEvents',     label: 'Events',     icon: Calendar,      color: 'purple',  href: '/admin/events'     },
+  { key: 'openIssues',      label: 'Open Issues',icon: AlertTriangle,  color: 'rose',    href: '/admin/issues'     },
 ];
 
 const COLOR_MAP = {
@@ -138,13 +139,10 @@ export default function AdminOverview() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {loading
           ? STAT_CARDS.map((_, i) => <SkeletonCard key={i} />)
-          : STAT_CARDS.map(({ key, label, icon: Icon, color }) => {
+          : STAT_CARDS.map(({ key, label, icon: Icon, color, href }) => {
               const c = COLOR_MAP[color];
-              return (
-                <div
-                  key={key}
-                  className={`${cardBase} ${c.border} p-5 flex flex-col gap-3 hover:shadow-md transition-shadow`}
-                >
+              const cardContent = (
+                <>
                   <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center`}>
                     <Icon size={18} className={c.icon} />
                   </div>
@@ -154,6 +152,22 @@ export default function AdminOverview() {
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
                   </div>
+                </>
+              );
+
+              const cardClasses = `${cardBase} ${c.border} p-5 flex flex-col gap-3 hover:shadow-md transition-shadow cursor-pointer`;
+
+              if (href) {
+                return (
+                  <Link key={key} href={href} className={cardClasses}>
+                    {cardContent}
+                  </Link>
+                );
+              }
+
+              return (
+                <div key={key} className={cardClasses}>
+                  {cardContent}
                 </div>
               );
             })
