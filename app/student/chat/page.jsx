@@ -14,19 +14,13 @@ export default function StudentChat() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [meRes, studentsRes, facultyRes] = await Promise.all([
+    const [meRes, contactsRes] = await Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
-      fetch('/api/students?limit=200').then(r => r.json()),
-      fetch('/api/faculty').then(r => r.json())
+      fetch('/api/chat/contacts').then(r => r.json())
     ]);
 
-    const user = meRes.user;
-    setDbUser(user);
-
-    const chatUsers = (facultyRes.faculty || []).map(f => ({ id: f.userId, name: f.user?.name, email: f.user?.email, role: 'FACULTY' }));
-    const coords = (studentsRes.students || []).filter(s => s.isCoordinator && s.id !== user?.student?.id).map(s => ({ id: s.userId, name: s.user?.name, email: s.user?.email, role: 'COORDINATOR' }));
-    
-    setAllUsers([...chatUsers, ...coords]);
+    setDbUser(meRes.user);
+    setAllUsers(contactsRes.contacts || []);
     setLoading(false);
   }, []);
 

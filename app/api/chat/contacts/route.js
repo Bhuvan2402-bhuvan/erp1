@@ -11,11 +11,21 @@ export async function GET(req) {
     const { dbUser } = userCtx;
     let contacts = [];
 
+    const userSelect = {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      avatarUrl: true,
+      department: { select: { name: true, code: true } },
+      student: { select: { isCoordinator: true } }
+    };
+
     if (dbUser.role === 'ADMIN') {
       // Admins can see everyone
       contacts = await prisma.user.findMany({
         where: { id: { not: dbUser.id } },
-        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+        select: userSelect,
         orderBy: { name: 'asc' }
       });
     } else if (dbUser.role === 'FACULTY') {
@@ -29,7 +39,7 @@ export async function GET(req) {
             { student: { departmentId: facultyDeptId } }
           ]
         },
-        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+        select: userSelect,
         orderBy: { name: 'asc' }
       });
     } else if (dbUser.role === 'STUDENT') {
@@ -44,12 +54,21 @@ export async function GET(req) {
             { student: { isCoordinator: true } }
           ]
         },
-        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+        select: userSelect,
         orderBy: { name: 'asc' }
       });
     }
 
-    return NextResponse.json({ contacts }, { status: 200 });
+    const formattedContacts = contacts.map(c => ({
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      role: c.student?.isCoordinator ? 'COORDINATOR' : c.role,
+      avatarUrl: c.avatarUrl,
+      dept: c.department?.code || c.department?.name || 'General'
+    }));
+
+    return NextResponse.json({ contacts: formattedContacts }, { status: 200 });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ message: 'Error fetching contacts' }, { status: 500 });

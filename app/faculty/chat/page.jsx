@@ -14,25 +14,13 @@ export default function FacultyChat() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const meRes = await fetch('/api/auth/me').then(r => r.json());
-    if (!meRes.user) {
-      setLoading(false);
-      return;
-    }
-    
-    setDbUser(meRes.user);
-    const facultyDeptId = meRes.user.faculty?.departmentId;
+    const [meRes, contactsRes] = await Promise.all([
+      fetch('/api/auth/me').then(r => r.json()),
+      fetch('/api/chat/contacts').then(r => r.json())
+    ]);
 
-    const studentsRes = await fetch(`/api/students?limit=200${facultyDeptId ? `&departmentId=${facultyDeptId}` : ''}`).then(r => r.json());
-    
-    const chatUsers = (studentsRes.students || []).map(s => ({
-      id: s.userId,
-      name: s.user?.name,
-      email: s.user?.email,
-      role: s.isCoordinator ? 'COORDINATOR' : 'VOLUNTEER'
-    }));
-    
-    setAllUsers(chatUsers);
+    setDbUser(meRes.user);
+    setAllUsers(contactsRes.contacts || []);
     setLoading(false);
   }, []);
 

@@ -8,34 +8,22 @@ const ChatBox = dynamic(() => import('@/components/ChatBox'), {
 
 export default function AdminChat() {
   const [dbUser, setDbUser] = useState(null);
-  const [students, setStudents] = useState([]);
-  const [faculty, setFaculty] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [chatUsers, setChatUsers] = useState([]);
   const [chatTarget, setChatTarget] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [meRes, studentsRes, facultyRes] = await Promise.all([
+    const [meRes, contactsRes] = await Promise.all([
       fetch('/api/auth/me').then(r => r.json()),
-      fetch(`/api/students?limit=200`).then(r => r.json()),
-      fetch('/api/faculty').then(r => r.json())
+      fetch('/api/chat/contacts').then(r => r.json())
     ]);
 
-    const activeUser = meRes.user;
-    setDbUser(activeUser);
-    
-    const loadedStudents = studentsRes.students || [];
-    const loadedFaculty = facultyRes.faculty || [];
-    setStudents(loadedStudents);
-    setFaculty(loadedFaculty);
-
-    // Populate contacts on initial load
-    const allList = [
-      ...loadedStudents.map(s => ({ id: s.userId, name: s.user?.name, email: s.user?.email, role: s.isCoordinator ? 'COORDINATOR' : 'VOLUNTEER', dept: s.department?.name })),
-      ...loadedFaculty.map(f => ({ id: f.userId, name: f.user?.name, email: f.user?.email, role: 'FACULTY', dept: f.department?.name }))
-    ];
-    setChatUsers(allList);
+    setDbUser(meRes.user);
+    const loadedContacts = contactsRes.contacts || [];
+    setContacts(loadedContacts);
+    setChatUsers(loadedContacts);
     setLoading(false);
   }, []);
 
@@ -50,12 +38,11 @@ export default function AdminChat() {
       <div className={`${cardClass} p-4 overflow-y-auto`}>
         <h3 className="font-semibold mb-3">All Users</h3>
         <input
-          placeholder="Search..."
+          placeholder="Search contacts..."
           className="w-full px-3 py-2 border rounded-lg text-sm mb-3 dark:bg-slate-700 dark:border-slate-600 dark:text-white"
           onChange={(e) => {
             const q = e.target.value.toLowerCase();
-            const allList = [...students.map(s => ({ id: s.userId, name: s.user?.name, email: s.user?.email, role: s.isCoordinator ? 'COORDINATOR' : 'VOLUNTEER', dept: s.department?.name })), ...faculty.map(f => ({ id: f.userId, name: f.user?.name, email: f.user?.email, role: 'FACULTY', dept: f.department?.name }))];
-            setChatUsers(q ? allList.filter(u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)) : allList);
+            setChatUsers(q ? contacts.filter(u => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)) : contacts);
           }}
         />
         <div className="space-y-1">
