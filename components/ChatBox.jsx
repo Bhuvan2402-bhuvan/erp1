@@ -1,13 +1,13 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, MessageSquare } from 'lucide-react';
-import { useSupabase } from '@/lib/supabase/client-provider';
+import { useFirebase } from '@/lib/firebase/client-provider';
 
 export default function ChatBox({ currentUser, targetUser }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
-  const supabase = useSupabase();
+  const { user } = useFirebase();
 
   const fetchMessages = useCallback(async () => {
     if (!targetUser) return;
@@ -25,36 +25,12 @@ export default function ChatBox({ currentUser, targetUser }) {
   useEffect(() => {
     if (targetUser) {
       fetchMessages();
-      
-      const channel = supabase
-        .channel(`chat_${targetUser.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-          },
-          (payload) => {
-            const newMsg = payload.new;
-            if (
-              (newMsg.senderId === currentUser.id && newMsg.receiverId === targetUser.id) ||
-              (newMsg.senderId === targetUser.id && newMsg.receiverId === currentUser.id)
-            ) {
-              setMessages((prev) => {
-                if (prev.some((m) => m.id === newMsg.id)) return prev;
-                return [...prev, newMsg];
-              });
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      const interval = setInterval(() => {
+        fetchMessages();
+      }, 3000);
+      return () => clearInterval(interval);
     }
-  }, [targetUser, currentUser.id, fetchMessages, supabase]);
+  }, [targetUser, fetchMessages]);
 
   useEffect(() => {
     scrollToBottom();

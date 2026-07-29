@@ -11,6 +11,12 @@ export async function POST(req) {
     }
 
     const { dbUser } = userCtx;
+
+    // Prevent re-onboarding if user already has a role profile
+    if (dbUser.student || dbUser.faculty) {
+      return NextResponse.json({ message: 'Profile already completed. Re-onboarding is not allowed.' }, { status: 409 });
+    }
+
     const body = await req.json();
     const { success, data: validated, error: validationError } = validate(onboardingSchema, body);
     
@@ -19,6 +25,20 @@ export async function POST(req) {
     }
 
     const { role, departmentId, rollNo, year, section, semester, employeeId, designation } = validated;
+
+    // Enforce quota limits (same as signup)
+    if (role === 'FACULTY') {
+      const facultyCount = await prisma.user.count({ where: { role: 'FACULTY' } });
+      if (facultyCount >= 15) {
+        return NextResponse.json({ message: 'Faculty Coordinator registration limit reached (maximum 15).' }, { status: 400 });
+      }
+    }
+
+    // Verify department exists
+    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    if (!dept) {
+      return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
+    }
 
     await prisma.$transaction(async (tx) => {
       // Update base user

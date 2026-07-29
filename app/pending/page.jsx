@@ -1,18 +1,16 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSupabase } from '@/lib/supabase/client-provider';
+import { useFirebase } from '@/lib/firebase/client-provider';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function PendingApproval() {
   const router = useRouter();
-  const supabase = useSupabase();
+  const { user, loading, signOut } = useFirebase();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.push('/login');
-    });
-  }, [router, supabase]);
+    if (!loading && !user) router.push('/login');
+  }, [loading, user, router]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
@@ -27,8 +25,8 @@ export default function PendingApproval() {
         </p>
         <button 
           onClick={async () => {
-            await supabase.auth.signOut();
-            router.push('/login');
+            await signOut();
+            window.location.href = '/login';
           }}
           className="bg-gradient-to-r from-logo-navy to-logo-teal hover:opacity-90 text-white px-6 py-2.5 rounded-full font-medium transition shadow-sm"
         >

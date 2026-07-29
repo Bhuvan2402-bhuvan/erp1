@@ -79,6 +79,12 @@ export const PUT = withAuth(async (req, { params, user }) => {
     if (data.mentorId !== undefined || data.isCoordinator !== undefined) {
       const student = await prisma.student.findUnique({ where: { userId: id } });
       if (student) {
+        if (data.isCoordinator === true && !student.isCoordinator) {
+          const activeCoordCount = await prisma.student.count({ where: { isCoordinator: true } });
+          if (activeCoordCount >= 20) {
+            return NextResponse.json({ message: 'Student Coordinator limit reached (maximum 20 student coordinators allowed).' }, { status: 400 });
+          }
+        }
         const studentUpdateData = {};
         if (data.mentorId !== undefined) studentUpdateData.mentorId = data.mentorId === 'null' ? null : data.mentorId;
         if (data.isCoordinator !== undefined) studentUpdateData.isCoordinator = data.isCoordinator;

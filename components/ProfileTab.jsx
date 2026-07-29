@@ -81,6 +81,8 @@ export default function ProfileTab({ user, onUpdate }) {
     phone: user?.phone || '',
     bio: user?.bio || '',
     avatarUrl: user?.avatarUrl || '',
+    myBharatId: user?.student?.myBharatId || '',
+    myBharatCertUrl: user?.student?.myBharatCertUrl || '',
   });
 
   const roleKey = user?.role || 'STUDENT';
@@ -123,6 +125,8 @@ export default function ProfileTab({ user, onUpdate }) {
       phone: user?.phone || '',
       bio: user?.bio || '',
       avatarUrl: user?.avatarUrl || '',
+      myBharatId: user?.student?.myBharatId || '',
+      myBharatCertUrl: user?.student?.myBharatCertUrl || '',
     });
     setEditing(false);
   };
@@ -266,6 +270,28 @@ export default function ProfileTab({ user, onUpdate }) {
                   placeholder="https://..."
                 />
               </div>
+              {roleKey === 'STUDENT' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">myBharat Portal ID</label>
+                    <input
+                      className={inputClass}
+                      value={form.myBharatId || ''}
+                      onChange={(e) => setForm({ ...form, myBharatId: e.target.value })}
+                      placeholder="MB-12345678"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">myBharat Certificate URL</label>
+                    <input
+                      className={inputClass}
+                      value={form.myBharatCertUrl || ''}
+                      onChange={(e) => setForm({ ...form, myBharatCertUrl: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Bio</label>
                 <textarea
@@ -306,6 +332,9 @@ export default function ProfileTab({ user, onUpdate }) {
                       : null
                   }
                 />
+                <InfoRow icon={ShieldCheck} label="myBharat Portal ID" value={user?.student?.myBharatId || 'Not set'} />
+                <InfoRow icon={CheckCircle2} label="myBharat Certificate URL" value={user?.student?.myBharatCertUrl} />
+                <InfoRow icon={Star} label="Volunteer Points" value={`${user?.student?.points || 0} pts`} />
               </>
             )}
             {roleKey === 'FACULTY' && (

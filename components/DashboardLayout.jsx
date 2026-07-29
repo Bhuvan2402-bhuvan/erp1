@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
   GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck
 } from 'lucide-react';
-import { useSupabase } from '@/lib/supabase/client-provider';
+import { useFirebase } from '@/lib/firebase/client-provider';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useState, useEffect } from 'react';
 
@@ -19,17 +19,17 @@ const iconMap = {
 export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = useSupabase();
+  const { signOut } = useFirebase();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
-    const handlePrompt = (e) => {
+    const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
-    window.addEventListener('beforeinstallprompt', handlePrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handlePrompt);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleInstallApp = async () => {
@@ -43,8 +43,8 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    await signOut();
+    window.location.href = '/login';
   };
 
   const initials = dbUser?.name

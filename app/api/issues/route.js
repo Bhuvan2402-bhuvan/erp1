@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, createIssueSchema } from '@/lib/validations';
+import { rateLimit } from '@/lib/rate-limit';
+
+const issueLimiter = rateLimit({ interval: 60 * 60 * 1000, uniqueTokenPerInterval: 500 });
 
 // GET /api/issues — List issues
 export const GET = withAuth(async (req, { user }) => {
@@ -19,7 +22,13 @@ export const GET = withAuth(async (req, { user }) => {
       } else {
         where.studentId = dbUser.student.id;
       }
+    } else if (dbUser.role === 'FACULTY') {
+      // Faculty can only see issues from their department
+      const deptId = dbUser.faculty?.departmentId;
+      if (!deptId) return NextResponse.json({ issues: [] }, { status: 200 });
+      where.student = { departmentId: deptId };
     }
+    // ADMIN: no filter — sees all issues
 
     const issues = await prisma.issue.findMany({
       where,
@@ -36,12 +45,19 @@ export const GET = withAuth(async (req, { user }) => {
   }
 });
 
+
 // POST /api/issues — Report an issue (students only)
 export const POST = withAuth(async (req, { user }) => {
   try {
     const { dbUser } = user;
     if (!dbUser.student) {
       return NextResponse.json({ message: 'Only students can report issues' }, { status: 403 });
+    }
+
+    // Rate limit: 10 issues per hour per student
+    const { success: withinLimit } = issueLimiter.check(10, `issue:${dbUser.id}`);
+    if (!withinLimit) {
+      return NextResponse.json({ message: 'Too many complaint submissions. Please wait before submitting another.' }, { status: 429 });
     }
 
     const body = await req.json();

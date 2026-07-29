@@ -1,26 +1,23 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { createClient as createAdminClient } from '@supabase/supabase-js';
 import prisma from '@/lib/prisma';
 import { validate, signupSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
+import { adminAuth } from '@/lib/firebase/admin';
 
 const signupLimiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 500 });
 
 export async function POST(req) {
-  // Rate limit: 5 signup attempts per IP per 15 minutes
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const { success: withinLimit } = signupLimiter.check(5, `signup:${ip}`);
   if (!withinLimit) {
     return NextResponse.json({ message: 'Too many signup attempts. Please try again later.' }, { status: 429 });
   }
 
-  let supabaseAuthId = null;
+  let createdFirebaseUid = null;
 
   try {
     const body = await req.json();
 
-    // 1. Validate input (blocks ADMIN self-assignment via enum restriction)
     const { success, data: validated, error: validationError } = validate(signupSchema, body);
     if (!success) {
       return NextResponse.json({ message: validationError }, { status: 400 });
@@ -29,10 +26,16 @@ export async function POST(req) {
     const {
       email, password, name, role,
       departmentId, rollNo, year, section, semester,
-      employeeId, designation
+      employeeId, designation, firebaseUid: clientFirebaseUid
     } = validated;
 
-    // 2. Pre-check for duplicate unique fields before creating Supabase user
+    if (role === 'FACULTY') {
+      const facultyCount = await prisma.user.count({ where: { role: 'FACULTY' } });
+      if (facultyCount >= 15) {
+        return NextResponse.json({ message: 'Faculty Coordinator registration limit reached (maximum 15 accounts allowed).' }, { status: 400 });
+      }
+    }
+
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) {
       return NextResponse.json({ message: 'An account with this email already exists' }, { status: 409 });
@@ -52,40 +55,35 @@ export async function POST(req) {
       }
     }
 
-    // 3. Verify department exists
     const dept = await prisma.department.findUnique({ where: { id: departmentId } });
     if (!dept) {
       return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
     }
 
-    const supabase = createClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || 'http://localhost:3000';
-
-    // 4. Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name },
-        emailRedirectTo: `${siteUrl}/api/auth/callback`
+    let firebaseUid = clientFirebaseUid;
+    if (!firebaseUid) {
+      try {
+        const userRecord = await adminAuth.createUser({
+          email,
+          password,
+          displayName: name,
+        });
+        firebaseUid = userRecord.uid;
+        createdFirebaseUid = firebaseUid;
+      } catch (authErr) {
+        if (authErr.code === 'auth/email-already-exists') {
+          return NextResponse.json({ message: 'An account with this email already exists' }, { status: 409 });
+        }
+        // Any other Firebase error (quota, config, network) should fail the signup — do not create a ghost account
+        console.error('Firebase user creation error:', authErr);
+        return NextResponse.json({ message: 'Unable to create authentication account. Please try again later.' }, { status: 503 });
       }
-    });
-
-    if (authError) {
-      return NextResponse.json({ message: authError.message }, { status: 400 });
     }
 
-    if (!authData.user) {
-      return NextResponse.json({ message: 'Failed to create auth user' }, { status: 500 });
-    }
-
-    supabaseAuthId = authData.user.id;
-
-    // 5. Create the user in Prisma (transaction for consistency)
     await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          supabaseAuthId,
+          firebaseUid,
           email,
           name,
           role,
@@ -117,7 +115,6 @@ export async function POST(req) {
       }
     });
 
-    // Fire and forget webhook to Google Sheets
     const webhookUrl = process.env.GOOGLE_SHEET_WEBHOOK_URL;
     if (webhookUrl) {
       fetch(webhookUrl, {
@@ -135,24 +132,17 @@ export async function POST(req) {
     }
 
     return NextResponse.json({
-      message: 'Registration successful! A verification link has been sent to your email. Please check your inbox (and spam folder) to verify your account.'
+      message: 'Registration successful! Your account is pending coordinator approval.'
     }, { status: 201 });
 
   } catch (error) {
     console.error('Signup error:', error);
 
-    // Clean up orphan Supabase user if Prisma transaction failed
-    if (supabaseAuthId) {
+    if (createdFirebaseUid) {
       try {
-        const supabaseAdmin = createAdminClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY,
-          { auth: { autoRefreshToken: false, persistSession: false } }
-        );
-        await supabaseAdmin.auth.admin.deleteUser(supabaseAuthId);
-        console.log('Cleaned up orphan Supabase user:', supabaseAuthId);
+        await adminAuth.deleteUser(createdFirebaseUid);
       } catch (cleanupErr) {
-        console.error('Failed to cleanup Supabase user:', cleanupErr);
+        console.error('Failed to cleanup Firebase user:', cleanupErr);
       }
     }
 

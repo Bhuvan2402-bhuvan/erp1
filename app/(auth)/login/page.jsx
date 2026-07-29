@@ -4,13 +4,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useSupabase } from '@/lib/supabase/client-provider';
+import { useFirebase } from '@/lib/firebase/client-provider';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 
-/**
- * Shared post-login routing logic.
- * Determines where to send the user based on their dbUser record.
- */
 function resolvePostLoginRoute(dbUser) {
+  if (!dbUser) return { redirect: '/login' };
   if (dbUser.isBlocked) return { error: 'Your account has been blocked.' };
   if (dbUser.approvalStatus === 'REJECTED') return { error: 'Your account was rejected.' };
 
@@ -28,39 +26,33 @@ function resolvePostLoginRoute(dbUser) {
   return { redirect: '/student/events' };
 }
 
+const DEMO_ACCOUNTS = {
+  admin: { email: 'admin1@erp.com', password: 'AdminPass1!', label: 'Admin' },
+  faculty: { email: 'faculty1@erp.com', password: 'FacultyPass1!', label: 'Faculty' },
+  coordinator: { email: 'coord1@erp.com', password: 'CoordPass1!', label: 'Coordinator' },
+  student: { email: 'volunteer1@erp.com', password: 'VolunteerPass1!', label: 'Volunteer' },
+};
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
-  const supabase = useSupabase();
+  const roleParam = searchParams.get('role');
+  const { auth, googleProvider, user: firebaseUser, signOut } = useFirebase();
 
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const initialAcc = DEMO_ACCOUNTS[roleParam] || { email: '', password: '' };
+  const [formData, setFormData] = useState({ email: initialAcc.email, password: initialAcc.password });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
-        try {
-          const res = await fetch('/api/auth/me');
-          if (res.ok) {
-            const { user: dbUser } = await res.json();
-            const result = resolvePostLoginRoute(dbUser);
-            if (result.error) {
-              await supabase.auth.signOut();
-              setError(result.error);
-            } else {
-              router.push(result.redirect);
-            }
-          } else if (res.status === 404) {
-            router.push('/onboarding');
-          }
-        } catch (err) {
-          console.error('Auto-login database verification failed:', err);
-        }
-      }
-    });
-  }, [router, supabase]);
+    if (roleParam && DEMO_ACCOUNTS[roleParam]) {
+      setFormData({
+        email: DEMO_ACCOUNTS[roleParam].email,
+        password: DEMO_ACCOUNTS[roleParam].password
+      });
+    }
+  }, [roleParam]);
 
   useEffect(() => {
     if (urlError === 'auth-callback-failed') {
@@ -72,54 +64,76 @@ function LoginForm() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const fillDemoAccount = (roleKey) => {
+    const acc = DEMO_ACCOUNTS[roleKey];
+    if (acc) {
+      setFormData({ email: acc.email, password: acc.password });
+      setError('');
+    }
+  };
+
+  const handlePostAuthNavigation = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const { user: dbUser } = await res.json();
+        const result = resolvePostLoginRoute(dbUser);
+        if (result.error) {
+          await signOut();
+          setError(result.error);
+          return;
+        }
+        router.push(result.redirect);
+      } else if (res.status === 401 || res.status === 404) {
+        // No DB user yet — first-time login, send to onboarding
+        router.push('/onboarding');
+      } else {
+        router.push('/');
+      }
+    } catch (err) {
+      setError('Verification error. Please try again.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) {
-        if (error.message.includes('Email not confirmed')) {
-          setError('Please verify your email address before logging in. Check your inbox (and spam folder) for the verification link.');
+      try {
+        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      } catch (fbErr) {
+        if (fbErr.code === 'auth/api-key-not-valid' || fbErr.message?.includes('api-key-not-valid')) {
+          // Local demo fallback if real Firebase API Key is not set in .env yet
+          console.warn('Firebase API key notice: using local auth fallback');
         } else {
-          setError(error.message);
-        }
-      } else {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-           const { user: dbUser } = await res.json();
-           const result = resolvePostLoginRoute(dbUser);
-           if (result.error) {
-             await supabase.auth.signOut();
-             setError(result.error);
-             setLoading(false);
-             return;
-           }
-           router.push(result.redirect);
-        } else {
-           router.push('/');
+          throw fbErr;
         }
       }
+      await handlePostAuthNavigation();
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password.');
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
-      },
-    });
-    if (error) setError(error.message);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      await handlePostAuthNavigation();
+    } catch (err) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        // User closed the popup — not an error worth showing
+        return;
+      }
+      setError('Google sign-in failed. Please try again.');
+    }
   };
 
   return (
@@ -138,6 +152,44 @@ function LoginForm() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-100 dark:border-slate-700">
+          
+          {/* 1-Click Demo Credentials Quick Fill */}
+          <div className="mb-6 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 text-center uppercase tracking-wider">
+              ⚡ Quick Demo Credentials Fill
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('admin')}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
+              >
+                👑 Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('faculty')}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
+              >
+                🎓 Faculty
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('coordinator')}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
+              >
+                ⭐ Coordinator
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoAccount('student')}
+                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
+              >
+                🤝 Volunteer
+              </button>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
             

@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUser } from '@/lib/auth-helpers';
+import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, createCertificateSchema } from '@/lib/validations';
 
-// GET /api/certificates — List certificates (own or all for admin/faculty)
-export async function GET(req) {
+// GET /api/certificates — List certificates (own or scoped for admin/faculty)
+export const GET = withAuth(async (req, { user }) => {
   try {
-    const userCtx = await getUser();
-    if (!userCtx || !userCtx.dbUser) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-
-    const { dbUser } = userCtx;
+    const { dbUser } = user;
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get('studentId');
 
@@ -19,34 +16,50 @@ export async function GET(req) {
         return NextResponse.json({ certificates: [] }, { status: 200 }); // No profile = no certificates
       }
       where.studentId = dbUser.student.id;
-    } else if (studentId) {
-      where.studentId = studentId;
+    } else if (dbUser.role === 'FACULTY') {
+      // Faculty can only see certificates from students in their department
+      const facultyDeptId = dbUser.faculty?.departmentId;
+      if (studentId) {
+        // Verify the requested student belongs to the faculty's department
+        const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
+        if (!targetStudent || targetStudent.departmentId !== facultyDeptId) {
+          return NextResponse.json({ message: 'Forbidden. Student is not in your department.' }, { status: 403 });
+        }
+        where.studentId = studentId;
+      } else {
+        // Return all certificates from students in the faculty's department
+        where.student = { departmentId: facultyDeptId };
+      }
+    } else if (dbUser.role === 'ADMIN') {
+      // Admins can see all, optionally filtered by studentId
+      if (studentId) {
+        where.studentId = studentId;
+      }
     }
 
     const certificates = await prisma.certificate.findMany({
       where,
-      include: { student: { include: { user: { select: { name: true } } } } },
+      include: { student: { include: { user: { select: { name: true } }, department: { select: { name: true, code: true } } } } },
       orderBy: { createdAt: 'desc' }
     });
 
     return NextResponse.json({ certificates }, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: 'Error fetching certificates' }, { status: 500 });
+    return sanitizeErrorResponse(error, 'Error fetching certificates');
   }
-}
+});
 
-// POST /api/certificates — Upload certificate
-export async function POST(req) {
+// POST /api/certificates — Upload certificate (students only)
+export const POST = withAuth(async (req, { user }) => {
   try {
-    const userCtx = await getUser();
-    if (!userCtx || !userCtx.dbUser || !userCtx.dbUser.student) {
+    const { dbUser } = user;
+    if (!dbUser.student) {
       return NextResponse.json({ message: 'Only students can upload certificates' }, { status: 403 });
     }
 
     const body = await req.json();
     const { success, data: validated, error: validationError } = validate(createCertificateSchema, body);
-    
+
     if (!success) {
       return NextResponse.json({ message: validationError }, { status: 400 });
     }
@@ -55,7 +68,7 @@ export async function POST(req) {
 
     const cert = await prisma.certificate.create({
       data: {
-        studentId: userCtx.dbUser.student.id,
+        studentId: dbUser.student.id,
         title,
         description,
         fileUrl
@@ -64,7 +77,6 @@ export async function POST(req) {
 
     return NextResponse.json({ message: 'Certificate uploaded', certificate: cert }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: 'Error uploading certificate' }, { status: 500 });
+    return sanitizeErrorResponse(error, 'Error uploading certificate');
   }
-}
+});

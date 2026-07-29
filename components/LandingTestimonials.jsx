@@ -49,8 +49,9 @@ export default function LandingTestimonials() {
             {testimonials.map((item, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => setActiveTab(idx)}
-                className={`w-full text-left px-5 py-3 rounded-2xl flex items-center gap-4 transition-all duration-300 font-semibold ${
+                className={`w-full text-left px-5 py-3 rounded-2xl flex items-center gap-4 transition-all duration-300 font-semibold cursor-pointer relative z-10 ${
                   activeTab === idx 
                     ? 'bg-white dark:bg-slate-800 shadow-md text-logo-teal border border-slate-100 dark:border-slate-700/50' 
                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'

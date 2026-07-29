@@ -32,13 +32,27 @@ export const PUT = withAuth(async (req, { user }) => {
       if (validated[key] !== undefined) updateData[key] = validated[key];
     }
 
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ message: 'No valid fields to update' }, { status: 400 });
+    if (Object.keys(updateData).length > 0) {
+      await prisma.user.update({
+        where: { id: user.dbUser.id },
+        data: updateData,
+      });
     }
 
-    const updated = await prisma.user.update({
+    // Update student-specific myBharat details if provided (using validated data)
+    if (user.dbUser.student && (validated.myBharatId !== undefined || validated.myBharatCertUrl !== undefined)) {
+      const studentUpdate = {};
+      if (validated.myBharatId !== undefined) studentUpdate.myBharatId = validated.myBharatId;
+      if (validated.myBharatCertUrl !== undefined) studentUpdate.myBharatCertUrl = validated.myBharatCertUrl;
+
+      await prisma.student.update({
+        where: { id: user.dbUser.student.id },
+        data: studentUpdate
+      });
+    }
+
+    const updated = await prisma.user.findUnique({
       where: { id: user.dbUser.id },
-      data: updateData,
       include: {
         student: { include: { department: true } },
         faculty: { include: { department: true } },

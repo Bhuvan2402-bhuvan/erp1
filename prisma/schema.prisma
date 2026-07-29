@@ -46,7 +46,7 @@ enum EventStatus {
 
 model User {
   id              String         @id @default(uuid())
-  supabaseAuthId  String         @unique
+  firebaseUid     String         @unique
   email           String         @unique
   name            String
   phone           String?
@@ -71,6 +71,10 @@ model User {
   uploadedPhotos    EventPhoto[]     @relation("PhotoUploader")
   resolvedIssues    Issue[]          @relation("IssueResolver")
   publicMessages    PublicMessage[]
+  financeRecords    FinanceRecord[]
+  documentations    Documentation[]
+  awardedPoints     PointsLog[]
+  issuedWarnings    WarningLog[]
 
   @@index([email])
   @@index([role])
@@ -107,6 +111,10 @@ model Student {
   departmentId  String
   isCoordinator Boolean  @default(false)
   mentorId      String?
+  myBharatId    String?
+  myBharatCertUrl String?
+  points        Int      @default(0)
+  warnings      Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -117,6 +125,8 @@ model Student {
   eventAttendances   EventAttendance[]
   issues             Issue[]
   certificates       Certificate[]
+  pointsLogs         PointsLog[]
+  warningLogs        WarningLog[]
 
   @@index([rollNo])
   @@index([departmentId])
@@ -295,4 +305,76 @@ model Notification {
   @@index([userId, read])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ─── Finance, Documentation & Student Records ─────────────
+
+enum FinanceType {
+  INCOME
+  EXPENSE
+  BUDGET
+}
+
+model FinanceRecord {
+  id          String      @id @default(uuid())
+  title       String
+  amount      Float
+  type        FinanceType @default(EXPENSE)
+  category    String
+  description String?
+  receiptUrl  String?
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  createdBy   User        @relation(fields: [createdById], references: [id])
+
+  @@index([type])
+  @@index([createdAt])
+  @@map("finance_records")
+}
+
+model Documentation {
+  id           String   @id @default(uuid())
+  title        String
+  category     String   // REPORT, CIRCULAR, GUIDELINE, ARCHIVE
+  description  String?
+  fileUrl      String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+
+  @@index([category])
+  @@map("documentations")
+}
+
+model PointsLog {
+  id          String   @id @default(uuid())
+  studentId   String
+  awardedById String
+  points      Int
+  reason      String
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  awardedBy   User     @relation(fields: [awardedById], references: [id])
+
+  @@index([studentId])
+  @@map("points_logs")
+}
+
+model WarningLog {
+  id          String   @id @default(uuid())
+  studentId   String
+  issuedById  String
+  reason      String
+  proofUrl    String?
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  issuedBy    User     @relation(fields: [issuedById], references: [id])
+
+  @@index([studentId])
+  @@map("warning_logs")
 }

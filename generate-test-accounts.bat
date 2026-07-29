@@ -1,11 +1,11 @@
 @echo off
 echo ===================================================
-echo     GENERATING HIERARCHICAL TEST ACCOUNTS
+echo     GENERATING FRESH HIERARCHICAL ACCOUNTS
 echo ===================================================
 
 echo.
-echo Running seed-users.mjs...
-call node --env-file=.env.local scripts/seed-users.mjs
+echo Running generate-accounts.mjs...
+call node scripts/generate-accounts.mjs
 
 echo.
 pause

@@ -3,6 +3,10 @@ import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, sendMessageSchema } from '@/lib/validations';
 
+import { rateLimit } from '@/lib/rate-limit';
+
+const chatLimiter = rateLimit({ interval: 60_000, uniqueTokenPerInterval: 500 });
+
 // GET /api/chat — Get messages between two users (or list conversations)
 export const GET = withAuth(async (req, { user }) => {
   try {
@@ -11,16 +15,32 @@ export const GET = withAuth(async (req, { user }) => {
     const myId = user.dbUser.id;
 
     if (!otherUserId) {
-      // Return list of conversations (distinct users chatted with)
-      const users = await prisma.$queryRaw`
-        SELECT id, name, email, role, "avatarUrl"
-        FROM users
-        WHERE id IN (
-          SELECT "receiverId" FROM messages WHERE "senderId" = ${myId}
-          UNION
-          SELECT "senderId" FROM messages WHERE "receiverId" = ${myId}
-        )
-      `;
+      // Return list of distinct users chatted with (sent or received messages)
+      const [sent, received] = await Promise.all([
+        prisma.message.findMany({
+          where: { senderId: myId },
+          select: { receiverId: true },
+          distinct: ['receiverId'],
+        }),
+        prisma.message.findMany({
+          where: { receiverId: myId },
+          select: { senderId: true },
+          distinct: ['senderId'],
+        }),
+      ]);
+
+      const contactIds = [
+        ...new Set([
+          ...sent.map(m => m.receiverId),
+          ...received.map(m => m.senderId),
+        ]),
+      ].filter(id => id !== myId);
+
+      const users = await prisma.user.findMany({
+        where: { id: { in: contactIds } },
+        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
+      });
+
       return NextResponse.json({ conversations: users }, { status: 200 });
     }
 
@@ -44,12 +64,19 @@ export const GET = withAuth(async (req, { user }) => {
 // POST /api/chat — Send a message
 export const POST = withAuth(async (req, { user }) => {
   try {
+    const dbUser = user.dbUser;
+
+    // Rate limit: 30 messages per user per minute
+    const { success: withinLimit } = chatLimiter.check(30, `chat:${dbUser.id}`);
+    if (!withinLimit) {
+      return NextResponse.json({ message: 'Too many messages sent. Please wait a moment.' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { success, data: validated, error: validationError } = validate(sendMessageSchema, body);
     if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
 
     const { receiverId, content } = validated;
-    const dbUser = user.dbUser;
 
     // Verify chat roster eligibility
     if (dbUser.role !== 'ADMIN') {

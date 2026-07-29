@@ -11,12 +11,25 @@ export const GET = withAuth(async (req, { user }) => {
     const status = searchParams.get('status');
     const type = searchParams.get('type');
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50'), 1), 100);
     const skip = (page - 1) * limit;
 
     const where = {};
-    if (status) where.status = status;
-    if (type) where.type = type;
+    const validStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED'];
+    const validTypes = ['ACTIVITY', 'CAMP', 'WORKSHOP', 'RALLY', 'AWARENESS'];
+
+    if (status) {
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json({ message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 });
+      }
+      where.status = status;
+    }
+    if (type) {
+      if (!validTypes.includes(type)) {
+        return NextResponse.json({ message: `Invalid type. Must be one of: ${validTypes.join(', ')}` }, { status: 400 });
+      }
+      where.type = type;
+    }
 
     const [events, total] = await Promise.all([
       prisma.event.findMany({

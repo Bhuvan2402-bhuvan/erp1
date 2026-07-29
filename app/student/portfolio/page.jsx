@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function StudentPortfolio() {
@@ -30,6 +30,22 @@ export default function StudentPortfolio() {
     }
   };
 
+  const handleDeleteCertificate = async (id) => {
+    if (!confirm('Are you sure you want to delete this certificate?')) return;
+    try {
+      const res = await fetch(`/api/certificates/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Certificate deleted successfully');
+        fetchData();
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Failed to delete certificate');
+      }
+    } catch (err) {
+      toast.error('Error deleting certificate');
+    }
+  };
+
   if (loading) return <div className="text-slate-500 py-8">Loading portfolio...</div>;
 
   const cardClass = 'bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700';
@@ -50,8 +66,17 @@ export default function StudentPortfolio() {
           <div key={cert.id} className={`${cardClass} p-5`}>
             <h4 className="font-bold">{cert.title}</h4>
             {cert.description && <p className="text-sm text-slate-500 mt-1">{cert.description}</p>}
-            <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-logo-teal hover:underline mt-2 inline-block">View Certificate →</a>
-            <p className="text-xs text-slate-400 mt-1">{new Date(cert.createdAt).toLocaleDateString()}</p>
+            <div className="flex justify-between items-center mt-3">
+              <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-logo-teal hover:underline inline-block">View Certificate →</a>
+              <button 
+                onClick={() => handleDeleteCertificate(cert.id)} 
+                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded transition"
+                title="Delete Certificate"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-2">{new Date(cert.createdAt).toLocaleDateString()}</p>
           </div>
         ))}
         {certificates.length === 0 && <p className="text-center text-slate-500 py-4 col-span-2">No certificates uploaded yet.</p>}

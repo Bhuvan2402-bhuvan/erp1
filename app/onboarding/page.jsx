@@ -1,13 +1,14 @@
 'use client';
+export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useSupabase } from '@/lib/supabase/client-provider';
+import { useFirebase } from '@/lib/firebase/client-provider';
 
 export default function Onboarding() {
   const router = useRouter();
-  const supabase = useSupabase();
+  const { user, loading: authLoading } = useFirebase();
   const [role, setRole] = useState('STUDENT');
   
   const [formData, setFormData] = useState({
@@ -19,22 +20,17 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [departments, setDepartments] = useState([]);
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.push('/login');
-      } else {
-        setCheckingAuth(false);
-      }
-    });
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
 
     fetch('/api/departments')
       .then(res => res.json())
       .then(data => setDepartments(data.departments || []))
       .catch(err => console.error(err));
-  }, [router, supabase]);
+  }, [authLoading, user, router]);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -66,12 +62,14 @@ export default function Onboarding() {
     }
   };
 
+  const { signOut } = useFirebase();
+
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    await signOut();
+    window.location.href = '/login';
   };
 
-  if (checkingAuth) return <div className="min-h-screen bg-slate-50 flex justify-center items-center">Loading...</div>;
+  if (authLoading) return <div className="min-h-screen bg-slate-50 flex justify-center items-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

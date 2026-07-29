@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { createClient } from '@supabase/supabase-js';
 import { validate, resetPasswordSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
+import { adminAuth } from '@/lib/firebase/admin';
 
 const limiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 200 });
 
 export const POST = withAuth(async (req, { params, user }) => {
-  // Rate limit: 5 password resets per IP per 15 minutes
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   const { success: withinLimit } = limiter.check(5, `reset-pw:${ip}`);
   if (!withinLimit) {
@@ -39,21 +38,13 @@ export const POST = withAuth(async (req, { params, user }) => {
       }
     }
 
-    // Initialize Supabase Admin Client using Service Role Key
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(dbUser.supabaseAuthId, {
-      password: newPassword,
-      user_metadata: { force_password_reset: true }
-    });
-
-    if (error) {
-      console.error('Supabase Admin Error:', error);
-      return NextResponse.json({ message: error.message }, { status: 400 });
+    try {
+      await adminAuth.updateUser(dbUser.firebaseUid, {
+        password: newPassword,
+      });
+    } catch (authErr) {
+      console.error('Firebase Admin update password error:', authErr.message);
+      return NextResponse.json({ message: 'Failed to reset password in authentication system. Please try again.' }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'Password forcefully reset' }, { status: 200 });

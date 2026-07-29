@@ -43,8 +43,9 @@ export default function LandingFaqs() {
             return (
               <div key={idx} className="bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl overflow-hidden transition-all duration-300 shadow-sm">
                 <button
+                  type="button"
                   onClick={() => setOpenFaq(isOpen ? null : idx)}
-                  className="w-full px-6 py-5 flex justify-between items-center text-left font-bold text-slate-800 dark:text-slate-100"
+                  className="w-full px-6 py-5 flex justify-between items-center text-left font-bold text-slate-800 dark:text-slate-100 cursor-pointer relative z-10"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />

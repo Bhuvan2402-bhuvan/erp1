@@ -44,6 +44,11 @@ export async function POST(req) {
     
     return NextResponse.json({ message: 'Department created', department: newDept }, { status: 201 });
   } catch (error) {
+    // Prisma unique constraint violation (duplicate name or code)
+    if (error?.code === 'P2002') {
+      const field = error?.meta?.target?.includes('code') ? 'code' : 'name';
+      return NextResponse.json({ message: `A department with this ${field} already exists` }, { status: 409 });
+    }
     return NextResponse.json({ message: 'Error creating department' }, { status: 500 });
   }
 }

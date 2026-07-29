@@ -35,8 +35,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   
-  // Skip API, Supabase, and Next.js internal requests
-  if (url.pathname.startsWith('/api') || url.host.includes('supabase') || url.pathname.startsWith('/_next')) {
+  // Skip API, Firebase, and Next.js internal requests
+  if (url.pathname.startsWith('/api') || url.host.includes('firebase') || url.host.includes('googleapis') || url.pathname.startsWith('/_next')) {
     return;
   }
 

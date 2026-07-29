@@ -215,15 +215,15 @@ export default async function Home() {
           <p className="text-slate-100/80 dark:text-slate-300 mb-10 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
             Create an account, view assigned village outreach programs, coordinate events, and build your digital community portfolio.
           </p>
-          <Link href="/signup" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-logo-navy hover:bg-slate-50 font-bold rounded-full shadow-xl transition-all duration-300 hover:scale-[1.03]">
+          <a href="/signup" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-logo-navy hover:bg-slate-50 font-bold rounded-full shadow-xl transition-all duration-300 hover:scale-[1.03] cursor-pointer relative z-30">
             Start Registering Now
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
         </div>
       </section>
 
       {/* Premium Footer */}
-      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 py-16 relative z-10 shrink-0">
+      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 py-16 relative z-30 shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-12">
           <div className="space-y-4">
             <div className="flex items-center">
@@ -237,8 +237,8 @@ export default async function Home() {
           <div>
             <h4 className="text-white font-bold text-sm mb-4 uppercase tracking-wider">Quick Links</h4>
             <ul className="space-y-2 text-xs font-semibold">
-              <li><Link href="/login" className="hover:text-white transition">Sign In Portal</Link></li>
-              <li><Link href="/signup" className="hover:text-white transition">Volunteer Registration</Link></li>
+              <li><a href="/login" className="hover:text-white transition cursor-pointer">Sign In Portal</a></li>
+              <li><a href="/signup" className="hover:text-white transition cursor-pointer">Volunteer Registration</a></li>
             </ul>
           </div>
 
@@ -259,6 +259,16 @@ export default async function Home() {
               Guntur, Andhra Pradesh, India
             </p>
             <p className="text-xs font-bold text-slate-300 mt-2">Email: <a href="mailto:yenugabhuvanamohanchowdary@gmail.com" className="hover:underline text-logo-teal">yenugabhuvanamohanchowdary@gmail.com</a></p>
+
+            <div className="mt-4 pt-4 border-t border-slate-800">
+              <p className="text-xs font-bold text-white mb-2 uppercase tracking-wider">Follow Us</p>
+              <div className="flex items-center gap-3">
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-logo-teal hover:text-white transition text-xs font-bold">Instagram</a>
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-logo-teal hover:text-white transition text-xs font-bold">LinkedIn</a>
+                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-logo-teal hover:text-white transition text-xs font-bold">Twitter/X</a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 hover:bg-logo-teal hover:text-white transition text-xs font-bold">YouTube</a>
+              </div>
+            </div>
           </div>
         </div>
         

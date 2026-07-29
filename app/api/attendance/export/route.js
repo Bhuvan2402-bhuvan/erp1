@@ -15,7 +15,10 @@ function sanitizeCsvValue(val) {
 export async function GET(req) {
   try {
     const auth = await requireRole(['ADMIN', 'FACULTY']);
-    if (!auth.authorized) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    if (!auth.authorized) {
+      const status = auth.reason === 'unauthenticated' ? 401 : 403;
+      return NextResponse.json({ message: auth.reason === 'unauthenticated' ? 'Unauthorized' : 'Forbidden' }, { status });
+    }
 
     const { searchParams } = new URL(req.url);
     const departmentId = searchParams.get('departmentId');
@@ -76,11 +79,16 @@ export async function GET(req) {
 
     const csv = [headers.map(v => `"${sanitizeCsvValue(v)}"`).join(','), ...rows.map(r => r.map(v => `"${sanitizeCsvValue(v)}"`).join(','))].join('\n');
 
+    // Sanitize filename parts to prevent header injection
+    const safeDept = (departmentId || 'all').replace(/[^a-zA-Z0-9_-]/g, '');
+    const safeFrom = (from || 'start').replace(/[^a-zA-Z0-9_-]/g, '');
+    const safeTo = (to || 'end').replace(/[^a-zA-Z0-9_-]/g, '');
+
     return new Response(csv, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="attendance_${departmentId || 'all'}_${from || 'start'}_${to || 'end'}.csv"`
+        'Content-Disposition': `attachment; filename="attendance_${safeDept}_${safeFrom}_${safeTo}.csv"`
       }
     });
   } catch (error) {

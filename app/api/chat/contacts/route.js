@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUser } from '@/lib/auth-helpers';
+import { getUser, verifyAccess } from '@/lib/auth-helpers';
+import { sanitizeErrorResponse } from '@/lib/api-helpers';
 
 // GET /api/chat/contacts — Get chat-eligible users based on role
 export async function GET(req) {
@@ -9,6 +10,8 @@ export async function GET(req) {
     if (!userCtx || !userCtx.dbUser) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
     const { dbUser } = userCtx;
+    const access = verifyAccess(dbUser);
+    if (!access.authorized) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     let contacts = [];
 
     const userSelect = {
@@ -70,7 +73,6 @@ export async function GET(req) {
 
     return NextResponse.json({ contacts: formattedContacts }, { status: 200 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: 'Error fetching contacts' }, { status: 500 });
+    return sanitizeErrorResponse(error, 'Error fetching contacts');
   }
 }

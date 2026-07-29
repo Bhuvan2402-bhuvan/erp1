@@ -1,6 +1,6 @@
 'use client';
 import { ThemeProvider } from 'next-themes';
-import { SupabaseProvider } from '@/lib/supabase/client-provider';
+import { FirebaseProvider } from '@/lib/firebase/client-provider';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 
@@ -24,10 +24,10 @@ export default function Providers({ children }) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <SupabaseProvider>
+      <FirebaseProvider>
         <Toaster position="top-right" />
         {children}
-      </SupabaseProvider>
+      </FirebaseProvider>
     </ThemeProvider>
   );
 }

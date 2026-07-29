@@ -7,7 +7,8 @@ export async function GET(req) {
   try {
     const auth = await requireRole(['ADMIN']);
     if (!auth.authorized) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      const status = auth.reason === 'unauthenticated' ? 401 : 403;
+      return NextResponse.json({ message: auth.reason === 'unauthenticated' ? 'Unauthorized' : 'Forbidden' }, { status });
     }
 
     const pendingUsers = await prisma.user.findMany({
