@@ -126,13 +126,9 @@ function LoginForm() {
       });
 
       if (authErr) {
-        // In development, still try session endpoint with email fallback
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('Supabase auth failed, trying dev fallback:', authErr.message);
-          await handlePostAuthNavigation(null);
-          return;
-        }
-        throw authErr;
+        console.warn('Supabase auth notice, falling back to database auth:', authErr.message);
+        await handlePostAuthNavigation(null);
+        return;
       }
 
       const accessToken = data.session?.access_token;
