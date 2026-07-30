@@ -4,8 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useFirebase } from '@/lib/firebase/client-provider';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 function resolvePostLoginRoute(dbUser) {
   if (!dbUser) return { redirect: '/login' };
@@ -38,7 +37,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
   const roleParam = searchParams.get('role');
-  const { auth, googleProvider, user: firebaseUser, signOut } = useFirebase();
+  const { supabase, signOut, refreshUser } = useSupabase();
 
   const initialAcc = DEMO_ACCOUNTS[roleParam] || { email: '', password: '' };
   const [formData, setFormData] = useState({ email: initialAcc.email, password: initialAcc.password });
@@ -57,6 +56,10 @@ function LoginForm() {
   useEffect(() => {
     if (urlError === 'auth-callback-failed') {
       setError('An error occurred during authentication callback.');
+    } else if (urlError === 'account-blocked') {
+      setError('Your account has been blocked. Contact an administrator.');
+    } else if (urlError === 'account-rejected') {
+      setError('Your account registration was rejected.');
     } else if (urlError) {
       setError('An error occurred during authentication.');
     }
@@ -72,8 +75,25 @@ function LoginForm() {
     }
   };
 
-  const handlePostAuthNavigation = async () => {
+  const handlePostAuthNavigation = async (token) => {
     try {
+      const sessionRes = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: token || 'mock-fallback',
+          fallbackEmail: formData.email
+        })
+      });
+
+      if (!sessionRes.ok) {
+        const sessionData = await sessionRes.json().catch(() => ({}));
+        setError(sessionData.message || 'Session establishment failed. Please try again.');
+        return;
+      }
+
+      if (refreshUser) await refreshUser();
+
       const res = await fetch('/api/auth/me');
       if (res.ok) {
         const { user: dbUser } = await res.json();
@@ -83,12 +103,11 @@ function LoginForm() {
           setError(result.error);
           return;
         }
-        router.push(result.redirect);
+        window.location.href = result.redirect;
       } else if (res.status === 401 || res.status === 404) {
-        // No DB user yet — first-time login, send to onboarding
-        router.push('/onboarding');
+        window.location.href = '/onboarding';
       } else {
-        router.push('/');
+        window.location.href = '/';
       }
     } catch (err) {
       setError('Verification error. Please try again.');
@@ -101,23 +120,25 @@ function LoginForm() {
     setError('');
 
     try {
-      try {
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      } catch (fbErr) {
-        if (fbErr.code === 'auth/api-key-not-valid' || fbErr.message?.includes('api-key-not-valid')) {
-          // Local demo fallback if real Firebase API Key is not set in .env yet
-          console.warn('Firebase API key notice: using local auth fallback');
-        } else {
-          throw fbErr;
+      const { data, error: authErr } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (authErr) {
+        // In development, still try session endpoint with email fallback
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Supabase auth failed, trying dev fallback:', authErr.message);
+          await handlePostAuthNavigation(null);
+          return;
         }
+        throw authErr;
       }
-      await handlePostAuthNavigation();
+
+      const accessToken = data.session?.access_token;
+      await handlePostAuthNavigation(accessToken);
     } catch (err) {
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
-        setError('Invalid email or password.');
-      } else {
-        setError(err.message || 'Something went wrong. Please try again.');
-      }
+      setError(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
@@ -125,13 +146,12 @@ function LoginForm() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      await handlePostAuthNavigation();
+      const { error: authErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/api/auth/callback` }
+      });
+      if (authErr) throw authErr;
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-        // User closed the popup — not an error worth showing
-        return;
-      }
       setError('Google sign-in failed. Please try again.');
     }
   };

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, issueWarningSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
+import { sendWarningNoticeEmail } from '@/lib/email';
 
 const warningLimiter = rateLimit({ interval: 60_000, uniqueTokenPerInterval: 500 });
 
@@ -15,11 +16,25 @@ export const GET = withAuth(async (req, { user }) => {
     let where = {};
 
     if (dbUser.role === 'STUDENT') {
-      // Regular volunteers can only see their own warnings
       if (!dbUser.student?.id) {
         return NextResponse.json({ warnings: [] }, { status: 200 });
       }
-      where.studentId = dbUser.student.id;
+      if (dbUser.student.isCoordinator) {
+        // Student Coordinators can view warnings for their department
+        const deptId = dbUser.student.departmentId;
+        if (studentId) {
+          const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
+          if (!targetStudent || targetStudent.departmentId !== deptId) {
+            return NextResponse.json({ message: 'Forbidden. Student is not in your department.' }, { status: 403 });
+          }
+          where.studentId = studentId;
+        } else {
+          where.student = { departmentId: deptId };
+        }
+      } else {
+        // Regular volunteers can only see their own warnings
+        where.studentId = dbUser.student.id;
+      }
     } else if (dbUser.role === 'FACULTY') {
       // Faculty can only see warnings for students in their department
       const deptId = dbUser.faculty?.departmentId;
@@ -98,6 +113,14 @@ export const POST = withAuth(async (req, { user }) => {
       return NextResponse.json({ message: 'Student volunteer not found' }, { status: 404 });
     }
 
+    // Department Scoping check: Faculty and Coordinators can only issue warnings to branch students
+    if (!isCallerAdmin) {
+      const callerDeptId = isCallerFaculty ? dbUser.faculty?.departmentId : dbUser.student?.departmentId;
+      if (!callerDeptId || student.departmentId !== callerDeptId) {
+        return NextResponse.json({ message: 'Forbidden. You can only issue warnings to students in your own department.' }, { status: 403 });
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const warning = await tx.warningLog.create({
         data: {
@@ -123,6 +146,11 @@ export const POST = withAuth(async (req, { user }) => {
           type: 'WARNING'
         }
       });
+
+      // Dispatch transactional email via Resend
+      if (student.user?.email) {
+        sendWarningNoticeEmail(student.user, reason, updatedStudent.warnings).catch(err => console.error(err));
+      }
 
       return { warning, updatedStudent };
     });

@@ -1,12 +1,12 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function PendingApproval() {
   const router = useRouter();
-  const { user, loading, signOut } = useFirebase();
+  const { user, loading, signOut } = useSupabase();
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');

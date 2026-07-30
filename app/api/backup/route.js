@@ -57,8 +57,14 @@ export const GET = withAuth(async (req, { user }) => {
     };
 
     if (type === 'all' || type === 'finance') {
+      const financeWhere = {
+        ...(hasDateFilter && { createdAt: dateFilter }),
+        ...(dbUser.role === 'FACULTY' && dbUser.faculty?.departmentId && {
+          createdBy: { departmentId: dbUser.faculty.departmentId }
+        })
+      };
       backupData.finance = await prisma.financeRecord.findMany({
-        where: hasDateFilter ? { createdAt: dateFilter } : undefined,
+        where: financeWhere,
         include: { createdBy: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'desc' },
         take: limit
@@ -66,8 +72,14 @@ export const GET = withAuth(async (req, { user }) => {
     }
 
     if (type === 'all' || type === 'documentation') {
+      const docWhere = {
+        ...(hasDateFilter && { createdAt: dateFilter }),
+        ...(dbUser.role === 'FACULTY' && dbUser.faculty?.departmentId && {
+          uploadedBy: { departmentId: dbUser.faculty.departmentId }
+        })
+      };
       backupData.documentations = await prisma.documentation.findMany({
-        where: hasDateFilter ? { createdAt: dateFilter } : undefined,
+        where: docWhere,
         include: { uploadedBy: { select: { name: true, email: true } } },
         orderBy: { createdAt: 'desc' },
         take: limit
@@ -75,8 +87,14 @@ export const GET = withAuth(async (req, { user }) => {
     }
 
     if (type === 'all' || type === 'events') {
+      const eventWhere = {
+        ...(hasDateFilter && { date: dateFilter }),
+        ...(dbUser.role === 'FACULTY' && dbUser.faculty?.departmentId && {
+          createdBy: { departmentId: dbUser.faculty.departmentId }
+        })
+      };
       backupData.eventReports = await prisma.event.findMany({
-        where: hasDateFilter ? { date: dateFilter } : undefined,
+        where: eventWhere,
         include: {
           createdBy: { select: { name: true, email: true } },
           _count: { select: { registrations: true, attendances: true, photos: true } }
@@ -87,8 +105,14 @@ export const GET = withAuth(async (req, { user }) => {
     }
 
     if (type === 'all' || type === 'attendance') {
+      const attendanceWhere = {
+        ...(hasDateFilter && { createdAt: dateFilter }),
+        ...(dbUser.role === 'FACULTY' && dbUser.faculty?.departmentId && {
+          student: { departmentId: dbUser.faculty.departmentId }
+        })
+      };
       backupData.studentAttendance = await prisma.eventAttendance.findMany({
-        where: hasDateFilter ? { createdAt: dateFilter } : undefined,
+        where: attendanceWhere,
         include: {
           event: { select: { title: true, date: true, type: true } },
           student: {

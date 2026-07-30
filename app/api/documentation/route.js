@@ -38,6 +38,15 @@ export const GET = withAuth(async (req, { user }) => {
 export const POST = withAuth(async (req, { user }) => {
   try {
     const { dbUser } = user;
+    
+    // Only Admin, Faculty, and Student Coordinators can upload documentation
+    const isCallerAdmin = dbUser.role === 'ADMIN';
+    const isCallerFaculty = dbUser.role === 'FACULTY';
+    const isCallerCoord = dbUser.role === 'STUDENT' && dbUser.student?.isCoordinator;
+
+    if (!isCallerAdmin && !isCallerFaculty && !isCallerCoord) {
+      return NextResponse.json({ message: 'Forbidden. Only coordinators, faculty, or admins can upload documentation.' }, { status: 403 });
+    }
 
     // Rate limit: 15 uploads per user per minute
     const { success: withinLimit } = docLimiter.check(15, `doc:${dbUser.id}`);

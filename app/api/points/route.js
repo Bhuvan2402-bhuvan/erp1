@@ -84,6 +84,14 @@ export const POST = withAuth(async (req, { user }) => {
       return NextResponse.json({ message: 'Student volunteer not found' }, { status: 404 });
     }
 
+    // Department Scoping check: Faculty and Coordinators can only award points to branch students
+    if (!isCallerAdmin) {
+      const callerDeptId = isCallerFaculty ? dbUser.faculty?.departmentId : dbUser.student?.departmentId;
+      if (!callerDeptId || student.departmentId !== callerDeptId) {
+        return NextResponse.json({ message: 'Forbidden. You can only award points to students in your own department.' }, { status: 403 });
+      }
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const log = await tx.pointsLog.create({
         data: {

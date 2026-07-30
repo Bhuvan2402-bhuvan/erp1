@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
-import admin from 'firebase-admin';
 
 const envPath = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envPath)) {
@@ -17,16 +16,18 @@ if (fs.existsSync(envPath)) {
   });
 }
 
-const apps = admin.apps || admin.default?.apps || [];
-if (!apps.length) {
-  try {
+let adminAuth = null;
+try {
+  const admin = await import('firebase-admin');
+  const apps = admin.apps || admin.default?.apps || [];
+  if (!apps.length) {
     admin.initializeApp({
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-app'
     });
-  } catch (err) {}
-}
+  }
+  adminAuth = admin.auth ? admin.auth() : admin.default.auth();
+} catch (err) {}
 
-const adminAuth = admin.auth ? admin.auth() : admin.default.auth();
 const prisma = new PrismaClient();
 
 async function purgeAllData() {

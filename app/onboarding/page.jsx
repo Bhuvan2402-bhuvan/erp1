@@ -1,14 +1,13 @@
 'use client';
-export const dynamic = 'force-dynamic';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 export default function Onboarding() {
   const router = useRouter();
-  const { user, loading: authLoading } = useFirebase();
+  const { user, loading: authLoading, signOut } = useSupabase();
   const [role, setRole] = useState('STUDENT');
   
   const [formData, setFormData] = useState({
@@ -62,7 +61,7 @@ export default function Onboarding() {
     }
   };
 
-  const { signOut } = useFirebase();
+
 
   const handleLogout = async () => {
     await signOut();

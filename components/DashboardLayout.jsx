@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
   GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck
 } from 'lucide-react';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useState, useEffect } from 'react';
 
@@ -19,7 +19,7 @@ const iconMap = {
 export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { signOut } = useFirebase();
+  const { signOut } = useSupabase();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 

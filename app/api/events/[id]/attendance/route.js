@@ -4,8 +4,17 @@ import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, markAttendanceSchema } from '@/lib/validations';
 
 // GET /api/events/[id]/attendance — Get attendance for an event
-export const GET = withAuth(async (req, { params }) => {
+export const GET = withAuth(async (req, { params, user }) => {
   try {
+    const { dbUser } = user;
+    const isCallerAdmin = dbUser.role === 'ADMIN';
+    const isCallerFaculty = dbUser.role === 'FACULTY';
+    const isCallerCoord = dbUser.role === 'STUDENT' && dbUser.student?.isCoordinator;
+
+    if (!isCallerAdmin && !isCallerFaculty && !isCallerCoord) {
+      return NextResponse.json({ message: 'Forbidden. Only coordinators, faculty, or admins can view attendance rosters.' }, { status: 403 });
+    }
+
     const { id: eventId } = params;
     const attendances = await prisma.eventAttendance.findMany({
       where: { eventId },

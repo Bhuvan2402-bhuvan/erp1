@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, updateUserSchema } from '@/lib/validations';
+import { sendApprovalEmail } from '@/lib/email';
 
 export const PUT = withAuth(async (req, { params, user }) => {
   try {
@@ -72,7 +73,10 @@ export const PUT = withAuth(async (req, { params, user }) => {
     if (data.departmentId !== undefined) userUpdateData.departmentId = data.departmentId;
 
     if (Object.keys(userUpdateData).length > 0) {
-      await prisma.user.update({ where: { id }, data: userUpdateData });
+      const updatedUser = await prisma.user.update({ where: { id }, data: userUpdateData });
+      if (data.approvalStatus === 'APPROVED') {
+        sendApprovalEmail(updatedUser).catch(err => console.error(err));
+      }
     }
 
     // Student-specific: coordinator promotion, mentor assignment

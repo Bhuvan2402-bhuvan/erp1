@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { ArrowRight, Users, Zap, Award } from 'lucide-react';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 export default function LandingHero({ stats }) {
-  const { user, signOut } = useFirebase();
+  const { user, signOut } = useSupabase();
 
   const handleGoToDashboard = async () => {
     try {

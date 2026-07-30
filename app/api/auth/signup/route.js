@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { validate, signupSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
-import { adminAuth } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const signupLimiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 500 });
 
@@ -13,7 +13,7 @@ export async function POST(req) {
     return NextResponse.json({ message: 'Too many signup attempts. Please try again later.' }, { status: 429 });
   }
 
-  let createdFirebaseUid = null;
+  let createdSupabaseUid = null;
 
   try {
     const body = await req.json();
@@ -26,7 +26,7 @@ export async function POST(req) {
     const {
       email, password, name, role,
       departmentId, rollNo, year, section, semester,
-      employeeId, designation, firebaseUid: clientFirebaseUid
+      employeeId, designation, firebaseUid: clientSupabaseUid
     } = validated;
 
     if (role === 'FACULTY') {
@@ -60,22 +60,22 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
     }
 
-    let firebaseUid = clientFirebaseUid;
-    if (!firebaseUid) {
+    let supabaseUid = clientSupabaseUid;
+    if (!supabaseUid) {
       try {
-        const userRecord = await adminAuth.createUser({
+        const { data: authUser, error: authErr } = await supabaseAdmin.auth.admin.createUser({
           email,
           password,
-          displayName: name,
+          email_confirm: true,
+          user_metadata: { name, role }
         });
-        firebaseUid = userRecord.uid;
-        createdFirebaseUid = firebaseUid;
-      } catch (authErr) {
-        if (authErr.code === 'auth/email-already-exists') {
-          return NextResponse.json({ message: 'An account with this email already exists' }, { status: 409 });
+        if (authErr || !authUser?.user) {
+          throw authErr || new Error('Failed to create Supabase user');
         }
-        // Any other Firebase error (quota, config, network) should fail the signup — do not create a ghost account
-        console.error('Firebase user creation error:', authErr);
+        supabaseUid = authUser.user.id;
+        createdSupabaseUid = supabaseUid;
+      } catch (authErr) {
+        console.error('Supabase user creation error:', authErr);
         return NextResponse.json({ message: 'Unable to create authentication account. Please try again later.' }, { status: 503 });
       }
     }
@@ -83,7 +83,7 @@ export async function POST(req) {
     await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          firebaseUid,
+          supabaseUid,
           email,
           name,
           role,
@@ -138,11 +138,11 @@ export async function POST(req) {
   } catch (error) {
     console.error('Signup error:', error);
 
-    if (createdFirebaseUid) {
+    if (createdSupabaseUid) {
       try {
-        await adminAuth.deleteUser(createdFirebaseUid);
+        await supabaseAdmin.auth.admin.deleteUser(createdSupabaseUid);
       } catch (cleanupErr) {
-        console.error('Failed to cleanup Firebase user:', cleanupErr);
+        console.error('Failed to cleanup Supabase user:', cleanupErr);
       }
     }
 

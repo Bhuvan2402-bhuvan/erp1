@@ -4,12 +4,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useFirebase } from '@/lib/firebase/client-provider';
-import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 export default function Signup() {
   const router = useRouter();
-  const { auth, googleProvider } = useFirebase();
+  const { supabase } = useSupabase();
 
   const [role, setRole] = useState('STUDENT');
   const [formData, setFormData] = useState({
@@ -52,24 +51,27 @@ export default function Signup() {
     }
 
     try {
-      let firebaseUid = null;
+      let supabaseUid = null;
       try {
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        firebaseUid = userCredential.user.uid;
-      } catch (fbErr) {
-        if (fbErr.code === 'auth/email-already-in-use') {
-          setError('An account with this email already exists.');
-        } else if (fbErr.code === 'auth/weak-password') {
-          setError('Password is too weak. Use at least 8 characters.');
-        } else {
-          setError('Unable to create authentication account. Please try again.');
+        const { data: authData, error: authErr } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: { data: { name: formData.name, role } }
+        });
+        if (authErr) {
+          setError(authErr.message || 'Unable to create authentication account.');
+          setLoading(false);
+          return;
         }
+        supabaseUid = authData.user?.id;
+      } catch (fbErr) {
+        setError('Unable to create authentication account. Please try again.');
         setLoading(false);
         return;
       }
 
       // 2. Register in Database via API
-      const payload = { ...formData, role, firebaseUid };
+      const payload = { ...formData, role, firebaseUid: supabaseUid };
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,8 +93,11 @@ export default function Signup() {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      router.push('/onboarding');
+      const { error: authErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/api/auth/callback` }
+      });
+      if (authErr) throw authErr;
     } catch (err) {
       setError(err.message);
     }

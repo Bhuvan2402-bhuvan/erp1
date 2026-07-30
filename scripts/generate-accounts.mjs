@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
-import admin from 'firebase-admin';
 
 const envPath = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envPath)) {
@@ -19,6 +18,7 @@ if (fs.existsSync(envPath)) {
 
 let adminAuth = null;
 try {
+  const admin = await import('firebase-admin');
   const apps = admin.apps || (admin.default && admin.default.apps) || [];
   if (!apps.length) {
     if (typeof admin.initializeApp === 'function') {
@@ -124,7 +124,7 @@ async function main() {
         if (!user) {
           user = await prisma.user.create({
             data: {
-              firebaseUid,
+              supabaseUid: firebaseUid,
               email: acc.email,
               name: acc.name,
               role: acc.role,

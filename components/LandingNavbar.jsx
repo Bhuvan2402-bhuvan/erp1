@@ -2,10 +2,10 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 export default function LandingNavbar() {
-  const { user, signOut } = useFirebase();
+  const { user, signOut } = useSupabase();
 
   const handleGoToDashboard = async () => {
     try {

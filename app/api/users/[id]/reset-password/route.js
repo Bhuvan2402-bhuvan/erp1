@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, resetPasswordSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
-import { adminAuth } from '@/lib/firebase/admin';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const limiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 200 });
 
@@ -39,11 +39,12 @@ export const POST = withAuth(async (req, { params, user }) => {
     }
 
     try {
-      await adminAuth.updateUser(dbUser.firebaseUid, {
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(dbUser.supabaseUid, {
         password: newPassword,
       });
+      if (authErr) throw authErr;
     } catch (authErr) {
-      console.error('Firebase Admin update password error:', authErr.message);
+      console.error('Supabase Admin update password error:', authErr.message);
       return NextResponse.json({ message: 'Failed to reset password in authentication system. Please try again.' }, { status: 500 });
     }
 

@@ -1,13 +1,13 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, MessageSquare } from 'lucide-react';
-import { useFirebase } from '@/lib/firebase/client-provider';
+import { useSupabase } from '@/lib/supabase/client-provider';
 
 export default function ChatBox({ currentUser, targetUser }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
-  const { user } = useFirebase();
+  const { user } = useSupabase();
 
   const fetchMessages = useCallback(async () => {
     if (!targetUser) return;
