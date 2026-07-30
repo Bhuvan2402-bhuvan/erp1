@@ -56,6 +56,71 @@ export async function POST(req) {
       });
     }
 
+    if (!dbUser && email) {
+      // Auto-provision demo accounts on-demand to guarantee demo sign-in reliability
+      const demoRoles = {
+        'admin1@erp.com': { role: 'ADMIN', name: 'NSS Lead Admin 1' },
+        'admin2@erp.com': { role: 'ADMIN', name: 'NSS Lead Admin 2' },
+        'faculty1@erp.com': { role: 'FACULTY', name: 'Faculty Coordinator 1' },
+        'faculty2@erp.com': { role: 'FACULTY', name: 'Faculty Coordinator 2' },
+        'coord1@erp.com': { role: 'STUDENT', name: 'Student Coordinator 1', isCoordinator: true },
+        'volunteer1@erp.com': { role: 'STUDENT', name: 'NSS Volunteer 1', isCoordinator: false },
+      };
+
+      if (demoRoles[email]) {
+        const demoInfo = demoRoles[email];
+        let dept = await prisma.department.findFirst();
+        if (!dept) {
+          dept = await prisma.department.create({
+            data: { name: 'Computer Science & Engineering', code: 'CSE' }
+          });
+        }
+
+        const generatedUid = uid || 'demo-uid-' + Math.random().toString(36).substring(2, 10);
+        dbUser = await prisma.user.create({
+          data: {
+            supabaseUid: generatedUid,
+            email,
+            name: demoInfo.name,
+            role: demoInfo.role,
+            approvalStatus: 'APPROVED',
+            departmentId: demoInfo.role !== 'ADMIN' ? dept.id : null
+          },
+          include: { student: true, faculty: true, department: true }
+        });
+
+        if (demoInfo.role === 'FACULTY') {
+          await prisma.faculty.create({
+            data: {
+              userId: dbUser.id,
+              employeeId: 'FAC1001',
+              designation: 'Faculty Coordinator',
+              departmentId: dept.id
+            }
+          });
+        } else if (demoInfo.role === 'STUDENT') {
+          await prisma.student.create({
+            data: {
+              userId: dbUser.id,
+              rollNo: '21CSE101',
+              year: 3,
+              section: 'A',
+              semester: 6,
+              departmentId: dept.id,
+              isCoordinator: demoInfo.isCoordinator || false,
+              points: demoInfo.isCoordinator ? 120 : 50
+            }
+          });
+        }
+
+        // Re-query with full includes
+        dbUser = await prisma.user.findUnique({
+          where: { id: dbUser.id },
+          include: { student: true, faculty: true, department: true }
+        });
+      }
+    }
+
     if (!dbUser) {
       const response = NextResponse.json({ user: null, message: 'Onboarding required' }, { status: 200 });
       const placeholderUid = uid || 'mock-uid-' + Math.random().toString(36).substring(2, 10);
