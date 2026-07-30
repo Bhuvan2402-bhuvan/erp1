@@ -24,6 +24,7 @@ export default async function StudentLayout({ children }) {
   
   const tabs = [
     { id: 'events', name: 'Events', href: '/student/events', basePath: '/student', icon: 'Calendar' },
+    { id: 'attendance', name: 'My Attendance', href: '/student/attendance', basePath: '/student/attendance', icon: 'ClipboardList' },
     { id: 'issues', name: 'Complaint Box', href: '/student/issues', basePath: '/student/issues', icon: 'AlertTriangle' },
     { id: 'documentation', name: 'Documentation', href: '/student/documentation', basePath: '/student/documentation', icon: 'BookOpen' },
     { id: 'portfolio', name: 'Portfolio', href: '/student/portfolio', basePath: '/student/portfolio', icon: 'Award' },
