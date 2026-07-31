@@ -5,7 +5,7 @@ import {
   Calendar, ClipboardList, AlertTriangle, Award, MessageSquare, Megaphone, UserCircle
 } from 'lucide-react';
 
-export const metadata = { title: 'Student Dashboard | Student Attendance Management Portal' };
+export const metadata = { title: 'Student Dashboard | VVITU NSS ERP' };
 
 export default async function StudentLayout({ children }) {
   const userCtx = await getUser();

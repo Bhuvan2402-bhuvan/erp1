@@ -111,10 +111,17 @@ export default function Signup() {
         <ThemeToggle />
       </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <Image src="/logo.png" alt="Portal Logo" width={140} height={64} className="object-contain" />
+        <div className="flex flex-col items-center justify-center gap-3">
+          <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={90} height={45} className="h-10 w-auto object-contain rounded" />
+            <div className="h-6 w-px bg-slate-300 dark:bg-slate-700" />
+            <Image src="/nss-logo.png" alt="NSS Logo" width={110} height={45} className="h-10 w-auto object-contain" />
+          </div>
+          <span className="text-xl font-extrabold text-slate-800 dark:text-white tracking-wide">
+            VVITU NSS ERP
+          </span>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 dark:text-white">
+        <h2 className="mt-4 text-center text-2xl font-extrabold text-slate-900 dark:text-white">
           Create an Account
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">

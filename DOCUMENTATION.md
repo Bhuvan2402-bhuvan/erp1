@@ -1,6 +1,6 @@
-# Volunteer ERP (SAMP): Complete System & User Role Documentation
+# VVITU NSS ERP: Complete System & User Role Documentation
 
-Volunteer ERP is a centralized, enterprise-grade Resource Planning and Attendance Management Portal designed to streamline student volunteering, branch operations, financial management, documentation archiving, anti-proxy attendance verification, and real-time community engagement.
+VVITU NSS ERP is a centralized, enterprise-grade Resource Planning and Attendance Management Portal designed to streamline student volunteering, branch operations, financial management, documentation archiving, anti-proxy attendance verification, and real-time community engagement.
 
 ---
 

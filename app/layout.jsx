@@ -2,8 +2,8 @@ import './globals.css';
 import Providers from './Providers';
 
 export const metadata = {
-  title: 'Student Attendance Management Portal',
-  description: 'Student Attendance Management Portal - Volunteer & Hours Audit System',
+  title: 'VVITU NSS ERP',
+  description: 'VVITU NSS ERP - Volunteer & Hours Audit System',
   manifest: '/manifest.json',
 }
 

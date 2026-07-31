@@ -50,7 +50,14 @@ export default function VisitorPage() {
             <Link href="/" className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <Image src="/logo.png" alt="SAMP Logo" width={110} height={50} className="object-contain" priority />
+            <div className="flex items-center gap-3">
+              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={70} height={35} className="h-8 w-auto object-contain rounded" priority />
+              <div className="h-5 w-px bg-slate-300 dark:bg-slate-700" />
+              <Image src="/nss-logo.png" alt="NSS Logo" width={90} height={35} className="h-8 w-auto object-contain" priority />
+              <span className="font-extrabold text-sm text-slate-800 dark:text-white hidden sm:inline-block">
+                VVITU NSS ERP
+              </span>
+            </div>
             <span className="text-xs font-extrabold uppercase px-2.5 py-1 rounded-full bg-logo-teal/10 text-logo-teal border border-logo-teal/20">
               Visitor Portal
             </span>
@@ -221,7 +228,7 @@ export default function VisitorPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200/60 dark:border-slate-800/60 py-6 text-center text-xs text-slate-400">
-        &copy; {new Date().getFullYear()} Volunteer ERP — Public Visitor View. All Rights Reserved.
+        &copy; {new Date().getFullYear()} Bhuvana Mohan Chowdary. All Rights Reserved.
       </footer>
     </div>
   );

@@ -1,6 +1,6 @@
-# 📊 Volunteer ERP (SAMP): Project Presentation Deck
+# 📊 VVITU NSS ERP: Project Presentation Deck
 
-> **Student Attendance & Operations ERP (SAMP)**  
+> **VVITU NSS ERP**  
 > *A Centralized, Role-Governed Enterprise Resource Planning & Anti-Proxy Attendance Platform for Academic & Community Volunteering Drives.*
 
 ---
@@ -24,7 +24,7 @@
 
 ### 🟢 SLIDE 1: Title & Executive Summary
 
-#### **Project Name**: Volunteer ERP (Student Attendance Management Portal - SAMP)
+#### **Project Name**: VVITU NSS ERP
 #### **Presenter**: Bhuvana Mohan Chowdary & Development Team
 #### **Core Objective**: To digitize and streamline institutional volunteering drives, anti-proxy attendance verification, financial ledgers, document archives, circular announcements, and grievance management under strict role account governance.
 

@@ -40,7 +40,7 @@ export default function LandingHero({ stats }) {
         {/* Hero Left Content */}
         <div className="lg:col-span-7 text-center lg:text-left relative z-30">
           <span className="inline-flex items-center gap-2 py-1.5 px-4 rounded-full bg-logo-teal/10 dark:bg-logo-teal/20 border border-logo-teal/20 dark:border-logo-teal/35 text-logo-teal dark:text-logo-teal text-xs font-bold mb-6 tracking-wide uppercase shadow-sm">
-            <Zap className="w-3.5 h-3.5 text-logo-amber fill-logo-amber animate-pulse" /> Student Attendance Management Portal
+            <Zap className="w-3.5 h-3.5 text-logo-amber fill-logo-amber animate-pulse" /> VVITU NSS ERP
           </span>
           
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight text-slate-900 dark:text-white">
@@ -56,7 +56,7 @@ export default function LandingHero({ stats }) {
           </h1>
           
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-            Welcome to the official Student Attendance Management Portal. We provide student leaders and administrators with tools to coordinate events, manage attendance, track hours, and generate portfolios.
+            Welcome to the official VVITU NSS ERP portal. We provide student leaders and administrators with tools to coordinate events, manage attendance, track hours, and generate portfolios.
           </p>
           
           {user ? (

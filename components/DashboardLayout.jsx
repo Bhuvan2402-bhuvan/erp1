@@ -86,8 +86,15 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
       <aside className="hidden md:flex w-72 border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex-col justify-between sticky top-0 h-screen z-20 shrink-0">
         <div className="flex flex-col flex-1 min-h-0">
           {/* Brand Header */}
-          <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 flex justify-center">
-            <Image src="/logo.png" alt="SAMP Logo" width={160} height={72} className="object-contain" />
+          <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center gap-2 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={80} height={40} className="h-10 w-auto object-contain rounded" />
+              <div className="h-6 w-px bg-slate-300 dark:bg-slate-700" />
+              <Image src="/nss-logo.png" alt="NSS Logo" width={100} height={40} className="h-10 w-auto object-contain" />
+            </div>
+            <span className="font-extrabold text-sm text-slate-800 dark:text-white tracking-wide">
+              VVITU NSS ERP
+            </span>
           </div>
 
           {/* User Profile Info */}
@@ -157,7 +164,14 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
       >
         <div className="flex flex-col flex-1 min-h-0">
           <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <Image src="/logo.png" alt="SAMP Logo" width={120} height={54} className="object-contain" />
+            <div className="flex items-center gap-2">
+              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={60} height={30} className="h-8 w-auto object-contain rounded" />
+              <div className="h-5 w-px bg-slate-300 dark:bg-slate-700" />
+              <Image src="/nss-logo.png" alt="NSS Logo" width={80} height={30} className="h-8 w-auto object-contain" />
+              <span className="font-extrabold text-sm text-slate-800 dark:text-white">
+                VVITU NSS ERP
+              </span>
+            </div>
             <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
               <X className="w-5 h-5" />
             </button>
@@ -217,7 +231,10 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
               {title}
             </span>
           </div>
-          <Image src="/logo.png" alt="SAMP Logo" width={72} height={32} className="object-contain shadow-sm" />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={50} height={25} className="h-6 w-auto object-contain rounded" />
+            <Image src="/nss-logo.png" alt="NSS Logo" width={60} height={25} className="h-6 w-auto object-contain" />
+          </div>
         </header>
 
         {/* Dashboard Title Section (Desktop only, as title is inside header on mobile) */}

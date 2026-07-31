@@ -1,6 +1,6 @@
-# Volunteer ERP
+# VVITU NSS ERP
 
-Volunteer ERP is an enterprise resource planning and management platform built with Next.js 14, React, TailwindCSS, Prisma, and Supabase. The platform provides a centralized, secure, and performant workspace for administrators, faculty coordinators, and student volunteers.
+VVITU NSS ERP is an enterprise resource planning and management platform built with Next.js 14, React, TailwindCSS, Prisma, and Supabase. The platform provides a centralized, secure, and performant workspace for administrators, faculty coordinators, and student volunteers.
 
 ## Key Features & Roadmap
 

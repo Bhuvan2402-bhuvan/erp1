@@ -226,11 +226,16 @@ export default async function Home() {
       <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 py-16 relative z-30 shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-4 gap-12">
           <div className="space-y-4">
-            <div className="flex items-center">
-              <Image src="/logo.png" alt="SAMP Logo" width={110} height={50} className="object-contain bg-white/10 p-1.5 rounded-lg" />
+            <div className="flex items-center gap-3">
+              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={80} height={40} className="h-9 w-auto object-contain bg-white p-1 rounded-lg" />
+              <div className="h-6 w-px bg-slate-700" />
+              <Image src="/nss-logo.png" alt="NSS Logo" width={100} height={40} className="h-9 w-auto object-contain bg-white p-1 rounded-lg" />
+              <span className="font-extrabold text-base text-white tracking-tight">
+                VVITU NSS ERP
+              </span>
             </div>
             <p className="text-xs leading-relaxed">
-              student attendance management portal - empowering students to coordinate events, track attendance, and log service records efficiently.
+              VVITU NSS ERP - empowering students to coordinate events, track attendance, and log service records efficiently.
             </p>
           </div>
 
@@ -273,7 +278,7 @@ export default async function Home() {
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-12 border-t border-slate-800 text-center text-[10px] tracking-wider uppercase">
-          &copy; {new Date().getFullYear()} student attendance management portal. All Rights Reserved.
+          &copy; {new Date().getFullYear()} Bhuvana Mohan Chowdary. All Rights Reserved.
         </div>
       </footer>
     </div>

@@ -6,7 +6,7 @@ import {
   GraduationCap, BookOpen, UserCircle
 } from 'lucide-react';
 
-export const metadata = { title: 'Admin Dashboard | Student Attendance Management Portal' };
+export const metadata = { title: 'Admin Dashboard | VVITU NSS ERP' };
 
 export default async function AdminLayout({ children }) {
   const userCtx = await getUser();

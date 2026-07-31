@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Users, Calendar, MessageSquare, Megaphone, UserCircle } from 'lucide-react';
 
-export const metadata = { title: 'Faculty Dashboard | Student Attendance Management Portal' };
+export const metadata = { title: 'Faculty Dashboard | VVITU NSS ERP' };
 
 export default async function FacultyLayout({ children }) {
   const userCtx = await getUser();

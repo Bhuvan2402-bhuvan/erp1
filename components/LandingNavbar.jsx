@@ -33,8 +33,13 @@ export default function LandingNavbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/60 dark:border-slate-800/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 relative z-50 cursor-pointer">
-          <Image src="/logo.png" alt="SAMP Logo" width={110} height={50} className="object-contain" priority />
+        <a href="/" className="flex items-center gap-3 relative z-50 cursor-pointer">
+          <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={80} height={40} className="h-9 w-auto object-contain rounded" priority />
+          <div className="h-6 w-px bg-slate-300 dark:bg-slate-700" />
+          <Image src="/nss-logo.png" alt="NSS Logo" width={100} height={40} className="h-9 w-auto object-contain" priority />
+          <span className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-white tracking-tight">
+            VVITU NSS ERP
+          </span>
         </a>
 
         <div className="flex items-center gap-3 sm:gap-4 relative z-50">

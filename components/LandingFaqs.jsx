@@ -33,7 +33,7 @@ export default function LandingFaqs() {
             Frequently Asked Questions
           </h2>
           <p className="text-slate-500 dark:text-slate-400">
-            Everything you need to know about the student attendance management portal system and event structure.
+            Everything you need to know about the VVITU NSS ERP system and event structure.
           </p>
         </div>
 
