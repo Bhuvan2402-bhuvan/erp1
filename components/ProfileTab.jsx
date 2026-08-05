@@ -1,10 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import {
   User, Mail, Phone, BookOpen, Building2, Hash,
   Edit3, Save, X, Star, ShieldCheck, GraduationCap,
-  CheckCircle2, AlertCircle, Camera
+  CheckCircle2, AlertCircle, Camera, KeyRound, Lock,
+  Sparkles, RefreshCw, Upload, Eye, EyeOff, Palette, Check
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
@@ -28,7 +29,27 @@ const ROLE_CONFIG = {
   },
 };
 
-function Avatar({ name, avatarUrl, size = 96 }) {
+const AVATAR_STYLES = [
+  { id: 'avataaars', name: 'Personas', exampleSeed: 'Felix' },
+  { id: 'bottts', name: 'Robots & Tech', exampleSeed: 'NSS' },
+  { id: 'lorelei', name: 'Illustrated', exampleSeed: 'Aria' },
+  { id: 'micah', name: 'Modern Art', exampleSeed: 'Leo' },
+  { id: 'adventurer', name: 'Adventurer', exampleSeed: 'Zoe' },
+  { id: 'fun-emoji', name: 'Fun Emoji', exampleSeed: 'Happy' },
+];
+
+const PRESET_AVATARS = [
+  { label: 'Student Volunteer', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Volunteer1&backgroundColor=b6e3f4' },
+  { label: 'Faculty Coordinator', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=FacultyLead&backgroundColor=c0aedd' },
+  { label: 'Lead Admin', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=NSSAdmin&backgroundColor=ffd5dc' },
+  { label: 'Tech Explorer', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=TechLeader&backgroundColor=d1d4f9' },
+  { label: 'Eco Champion', url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=EcoWarrior&backgroundColor=b6e3f4' },
+  { label: 'Community Hero', url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Hero2026&backgroundColor=ffdfbf' },
+  { label: 'Creative Designer', url: 'https://api.dicebear.com/7.x/micah/svg?seed=Designer&backgroundColor=ffd5dc' },
+  { label: 'Star Volunteer', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=StarVol&backgroundColor=c0aedd' },
+];
+
+function Avatar({ name, avatarUrl, size = 96, unoptimized = false }) {
   const initials = name
     ? name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?';
@@ -37,11 +58,12 @@ function Avatar({ name, avatarUrl, size = 96 }) {
     return (
       <Image
         src={avatarUrl}
-        alt={name}
+        alt={name || 'Avatar'}
         width={size}
         height={size}
+        unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('dicebear') || unoptimized}
         style={{ width: size, height: size }}
-        className="rounded-full object-cover ring-4 ring-white dark:ring-slate-800 shadow-lg"
+        className="rounded-full object-cover ring-4 ring-white dark:ring-slate-800 shadow-lg bg-slate-100 dark:bg-slate-700"
       />
     );
   }
@@ -72,9 +94,392 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
+// Interactive Avatar Studio & Picker Modal
+function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
+  const [activeTab, setActiveTab] = useState('PRESETS'); // PRESETS | GENERATOR | UPLOAD
+  const [selectedStyle, setSelectedStyle] = useState('avataaars');
+  const [seed, setSeed] = useState(name || 'Volunteer');
+  const [bgColor, setBgColor] = useState('b6e3f4');
+  const [customUrl, setCustomUrl] = useState(currentUrl || '');
+  const fileInputRef = useRef(null);
+
+  const bgSwatches = [
+    { label: 'Sky Blue', hex: 'b6e3f4' },
+    { label: 'Lavender', hex: 'c0aedd' },
+    { label: 'Soft Indigo', hex: 'd1d4f9' },
+    { label: 'Rose', hex: 'ffd5dc' },
+    { label: 'Warm Peach', hex: 'ffdfbf' },
+    { label: 'Emerald', hex: 'a7f3d0' },
+    { label: 'Slate', hex: 'e2e8f0' },
+  ];
+
+  const generatedAvatarUrl = `https://api.dicebear.com/7.x/${selectedStyle}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bgColor}`;
+
+  const handleRandomize = () => {
+    const randomSeed = Math.random().toString(36).substring(2, 10);
+    setSeed(randomSeed);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      alert('File size exceeds 3MB. Please choose a smaller image.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result;
+      if (dataUrl) {
+        onSelectAvatar(dataUrl);
+        onClose();
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-logo-teal/10 text-logo-teal">
+              <Palette className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Avatar Studio & Customizer</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Choose a preset, generate a unique vector avatar, or upload a photo</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-slate-100 dark:border-slate-700 px-6 pt-3 gap-3 bg-white dark:bg-slate-800">
+          <button
+            onClick={() => setActiveTab('PRESETS')}
+            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'PRESETS'
+                ? 'border-logo-teal text-logo-teal'
+                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" /> Presets Gallery
+          </button>
+          <button
+            onClick={() => setActiveTab('GENERATOR')}
+            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'GENERATOR'
+                ? 'border-logo-teal text-logo-teal'
+                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Palette className="w-4 h-4" /> Custom Generator
+          </button>
+          <button
+            onClick={() => setActiveTab('UPLOAD')}
+            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'UPLOAD'
+                ? 'border-logo-teal text-logo-teal'
+                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Upload className="w-4 h-4" /> Upload / URL
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6 overflow-y-auto space-y-6">
+          {activeTab === 'PRESETS' && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500 dark:text-slate-400">Click any avatar below to instantly set it as your profile picture:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {PRESET_AVATARS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      onSelectAvatar(preset.url);
+                      onClose();
+                    }}
+                    className="flex flex-col items-center p-3 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-logo-teal dark:hover:border-logo-teal bg-slate-50/50 dark:bg-slate-700/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition group"
+                  >
+                    <div className="relative mb-2">
+                      <Avatar name={preset.label} avatarUrl={preset.url} size={64} unoptimized />
+                    </div>
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-logo-teal text-center line-clamp-1">
+                      {preset.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'GENERATOR' && (
+            <div className="space-y-6">
+              {/* Preview */}
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-700/30 rounded-3xl border border-slate-100 dark:border-slate-700">
+                <div className="relative mb-3">
+                  <Avatar name={seed} avatarUrl={generatedAvatarUrl} size={112} unoptimized />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRandomize}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-logo-teal hover:text-logo-navy dark:hover:text-teal-300 transition"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Randomize Avatar
+                </button>
+              </div>
+
+              {/* Style Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Avatar Art Style</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {AVATAR_STYLES.map((style) => (
+                    <button
+                      key={style.id}
+                      type="button"
+                      onClick={() => setSelectedStyle(style.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${
+                        selectedStyle === style.id
+                          ? 'border-logo-teal bg-logo-teal text-white shadow-xs'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {style.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Seed Text Input */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Personality Seed / Name</label>
+                <input
+                  type="text"
+                  value={seed}
+                  onChange={(e) => setSeed(e.target.value)}
+                  placeholder="Type any word or name"
+                  className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-logo-teal"
+                />
+              </div>
+
+              {/* Background Swatches */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Background Tint</label>
+                <div className="flex flex-wrap gap-2">
+                  {bgSwatches.map((swatch) => (
+                    <button
+                      key={swatch.hex}
+                      type="button"
+                      onClick={() => setBgColor(swatch.hex)}
+                      style={{ backgroundColor: `#${swatch.hex}` }}
+                      className={`w-7 h-7 rounded-full border-2 transition flex items-center justify-center ${
+                        bgColor === swatch.hex ? 'border-logo-teal ring-2 ring-logo-teal/40 scale-110' : 'border-white dark:border-slate-800'
+                      }`}
+                      title={swatch.label}
+                    >
+                      {bgColor === swatch.hex && <Check className="w-3.5 h-3.5 text-slate-800" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectAvatar(generatedAvatarUrl);
+                  onClose();
+                }}
+                className="w-full py-3 bg-gradient-to-r from-logo-navy to-logo-teal hover:opacity-95 text-white font-medium rounded-xl text-sm transition shadow-sm"
+              >
+                Use Generated Avatar
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'UPLOAD' && (
+            <div className="space-y-6">
+              {/* File upload drag zone */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-logo-teal rounded-3xl cursor-pointer bg-slate-50/50 dark:bg-slate-700/30 transition group"
+              >
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+                  className="hidden"
+                />
+                <div className="p-3 bg-logo-teal/10 rounded-2xl text-logo-teal mb-3 group-hover:scale-110 transition">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Click to upload photo from your device</p>
+                <p className="text-xs text-slate-400 mt-1">Supports PNG, JPG, WEBP or SVG (Max 3MB)</p>
+              </div>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                <span className="flex-shrink mx-4 text-xs font-semibold uppercase text-slate-400">Or Image Web URL</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+              </div>
+
+              {/* Custom URL Input */}
+              <div className="space-y-3">
+                <input
+                  type="url"
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="https://example.com/my-photo.jpg"
+                  className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-logo-teal"
+                />
+                <button
+                  type="button"
+                  disabled={!customUrl.trim()}
+                  onClick={() => {
+                    if (customUrl.trim()) {
+                      onSelectAvatar(customUrl.trim());
+                      onClose();
+                    }
+                  }}
+                  className="w-full py-2.5 bg-logo-teal hover:bg-logo-navy text-white text-sm font-medium rounded-xl transition disabled:opacity-50"
+                >
+                  Apply Custom Image URL
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Password Change Card Component
+function PasswordChangeCard({ onToast }) {
+  const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (!passwords.newPassword || passwords.newPassword.length < 8) {
+      onToast('error', 'New password must be at least 8 characters long.');
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      onToast('error', 'Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/profile/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword: passwords.newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onToast('success', 'Password updated successfully!');
+        setPasswords({ newPassword: '', confirmPassword: '' });
+      } else {
+        onToast('error', data.message || 'Failed to update password.');
+      }
+    } catch {
+      onToast('error', 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStrength = (pw) => {
+    if (!pw) return { score: 0, label: '', color: '' };
+    if (pw.length < 8) return { score: 1, label: 'Weak (min 8 chars)', color: 'bg-red-500' };
+    const hasNum = /\d/.test(pw);
+    const hasSpecial = /[^A-Za-z0-9]/.test(pw);
+    if (hasNum && hasSpecial && pw.length >= 10) return { score: 3, label: 'Strong', color: 'bg-emerald-500' };
+    return { score: 2, label: 'Medium', color: 'bg-amber-500' };
+  };
+
+  const strength = getStrength(passwords.newPassword);
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+      <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-5 flex items-center gap-2">
+        <Lock className="w-4 h-4 text-logo-teal" />
+        Security & Password
+      </h3>
+
+      <form onSubmit={handleChangePassword} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={passwords.newPassword}
+              onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+              placeholder="At least 8 characters"
+              className="w-full px-4 py-2.5 pr-10 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-logo-teal transition"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {passwords.newPassword && (
+            <div className="mt-2 space-y-1">
+              <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all ${strength.color}`}
+                  style={{ width: `${(strength.score / 3) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-slate-400">Strength: <span className="font-medium text-slate-700 dark:text-slate-300">{strength.label}</span></p>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Confirm New Password</label>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={passwords.confirmPassword}
+            onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+            placeholder="Re-enter new password"
+            className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-logo-teal transition"
+          />
+          {passwords.confirmPassword && passwords.newPassword !== passwords.confirmPassword && (
+            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+          )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading || !passwords.newPassword || passwords.newPassword !== passwords.confirmPassword}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal hover:opacity-95 text-white text-sm font-medium rounded-xl transition shadow-sm disabled:opacity-50"
+        >
+          <KeyRound className="w-4 h-4" />
+          {loading ? 'Updating Password...' : 'Update Password'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function ProfileTab({ user, onUpdate }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showStudioModal, setShowStudioModal] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -119,6 +524,34 @@ export default function ProfileTab({ user, onUpdate }) {
     }
   };
 
+  const handleSelectAvatar = async (url) => {
+    setForm((prev) => ({ ...prev, avatarUrl: url }));
+    // Instantly save to backend if not in full edit mode
+    if (!editing) {
+      setSaving(true);
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form, avatarUrl: url }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('success', 'Avatar updated successfully!');
+          if (onUpdate) onUpdate(data.user);
+        } else {
+          showToast('error', data.message || 'Failed to update avatar.');
+        }
+      } catch {
+        showToast('error', 'Network error updating avatar.');
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      showToast('success', 'New avatar selected! Click Save Changes when done.');
+    }
+  };
+
   const handleCancel = () => {
     setForm({
       name: user?.name || '',
@@ -154,6 +587,16 @@ export default function ProfileTab({ user, onUpdate }) {
         </div>
       )}
 
+      {/* Avatar Studio Modal */}
+      {showStudioModal && (
+        <AvatarStudioModal
+          currentUrl={form.avatarUrl || user?.avatarUrl}
+          name={form.name || user?.name}
+          onClose={() => setShowStudioModal(false)}
+          onSelectAvatar={handleSelectAvatar}
+        />
+      )}
+
       {/* Hero card */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Banner */}
@@ -165,18 +608,29 @@ export default function ProfileTab({ user, onUpdate }) {
 
         <div className="px-8 pb-8">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-6">
-            {/* Avatar */}
-            <div className="relative w-fit">
+            {/* Avatar with Camera / Studio button */}
+            <div className="relative w-fit group">
               <Avatar name={form.name || user?.name} avatarUrl={form.avatarUrl || user?.avatarUrl} size={96} />
-              {editing && (
-                <div className="absolute -bottom-1 -right-1 p-1.5 bg-logo-teal rounded-full cursor-pointer hover:bg-logo-navy transition" title="Change avatar URL below">
-                  <Camera className="w-3.5 h-3.5 text-white" />
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowStudioModal(true)}
+                className="absolute -bottom-1 -right-1 p-2 bg-logo-teal hover:bg-logo-navy text-white rounded-full transition-all shadow-md group-hover:scale-110"
+                title="Open Avatar Studio & Customizer"
+              >
+                <Camera className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Buttons */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-2 mt-12 sm:mt-0">
+              <button
+                type="button"
+                onClick={() => setShowStudioModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+              >
+                <Palette className="w-4 h-4 text-logo-teal" /> Avatar Studio
+              </button>
+
               {!editing ? (
                 <button
                   onClick={() => setEditing(true)}
@@ -234,7 +688,7 @@ export default function ProfileTab({ user, onUpdate }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Edit / Info card */}
+        {/* Edit / Personal Details card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
           <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-5 flex items-center gap-2">
             <User className="w-4 h-4 text-logo-teal" />
@@ -262,7 +716,16 @@ export default function ProfileTab({ user, onUpdate }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1.5">Avatar URL</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Avatar Picture URL</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowStudioModal(true)}
+                    className="text-xs font-semibold text-logo-teal hover:underline flex items-center gap-1"
+                  >
+                    <Palette className="w-3 h-3" /> Custom Studio
+                  </button>
+                </div>
                 <input
                   className={inputClass}
                   value={form.avatarUrl}
@@ -312,58 +775,64 @@ export default function ProfileTab({ user, onUpdate }) {
           )}
         </div>
 
-        {/* Academic / Org Details card */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-          <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-5 flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-logo-teal" />
-            {roleKey === 'FACULTY' ? 'Faculty Details' : roleKey === 'ADMIN' ? 'Admin Details' : 'Academic Details'}
-          </h3>
-          <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
-            {roleKey === 'STUDENT' && (
-              <>
-                <InfoRow icon={Hash} label="Roll Number" value={user?.student?.rollNo} />
-                <InfoRow icon={BookOpen} label="Department" value={user?.student?.department?.name} />
-                <InfoRow
-                  icon={Building2}
-                  label="Year / Section"
-                  value={
-                    user?.student?.year && user?.student?.section
-                      ? `Year ${user.student.year} / Section ${user.student.section}`
-                      : null
-                  }
-                />
-                <InfoRow icon={ShieldCheck} label="myBharat Portal ID" value={user?.student?.myBharatId || 'Not set'} />
-                <InfoRow icon={CheckCircle2} label="myBharat Certificate URL" value={user?.student?.myBharatCertUrl} />
-                <InfoRow icon={Star} label="Volunteer Points" value={`${user?.student?.points || 0} pts`} />
-              </>
-            )}
-            {roleKey === 'FACULTY' && (
-              <>
-                <InfoRow icon={Hash} label="Employee ID" value={user?.faculty?.employeeId} />
-                <InfoRow icon={BookOpen} label="Assigned Branch" value={user?.faculty?.department?.name} />
-              </>
-            )}
-            {roleKey === 'ADMIN' && (
-              <InfoRow icon={ShieldCheck} label="Access Level" value="Full System Access" />
-            )}
+        {/* Academic / Org Details & Security Card Grid */}
+        <div className="space-y-6">
+          {/* Academic / Org Details card */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-5 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-logo-teal" />
+              {roleKey === 'FACULTY' ? 'Faculty Details' : roleKey === 'ADMIN' ? 'Admin Details' : 'Academic Details'}
+            </h3>
+            <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+              {roleKey === 'STUDENT' && (
+                <>
+                  <InfoRow icon={Hash} label="Roll Number" value={user?.student?.rollNo} />
+                  <InfoRow icon={BookOpen} label="Department" value={user?.student?.department?.name} />
+                  <InfoRow
+                    icon={Building2}
+                    label="Year / Section"
+                    value={
+                      user?.student?.year && user?.student?.section
+                        ? `Year ${user.student.year} / Section ${user.student.section}`
+                        : null
+                    }
+                  />
+                  <InfoRow icon={ShieldCheck} label="myBharat Portal ID" value={user?.student?.myBharatId || 'Not set'} />
+                  <InfoRow icon={CheckCircle2} label="myBharat Certificate URL" value={user?.student?.myBharatCertUrl} />
+                  <InfoRow icon={Star} label="Volunteer Points" value={`${user?.student?.points || 0} pts`} />
+                </>
+              )}
+              {roleKey === 'FACULTY' && (
+                <>
+                  <InfoRow icon={Hash} label="Employee ID" value={user?.faculty?.employeeId} />
+                  <InfoRow icon={BookOpen} label="Assigned Branch" value={user?.faculty?.department?.name} />
+                </>
+              )}
+              {roleKey === 'ADMIN' && (
+                <InfoRow icon={ShieldCheck} label="Access Level" value="Full System Access" />
+              )}
 
-            <InfoRow
-              icon={CheckCircle2}
-              label="Account Status"
-              value={
-                user?.approvalStatus === 'APPROVED'
-                  ? '✅ Approved'
-                  : user?.approvalStatus === 'PENDING'
-                  ? '⏳ Pending Approval'
-                  : user?.approvalStatus || 'Unknown'
-              }
-            />
-            <InfoRow
-              icon={Building2}
-              label="Member Since"
-              value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : null}
-            />
+              <InfoRow
+                icon={CheckCircle2}
+                label="Account Status"
+                value={
+                  user?.approvalStatus === 'APPROVED'
+                    ? '✅ Approved'
+                    : user?.approvalStatus === 'PENDING'
+                    ? '⏳ Pending Approval'
+                    : user?.approvalStatus || 'Unknown'
+                }
+              />
+              <InfoRow
+                icon={Building2}
+                label="Member Since"
+                value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }) : null}
+              />
+            </div>
           </div>
+
+          {/* Change Password Card */}
+          <PasswordChangeCard onToast={showToast} />
         </div>
       </div>
     </div>
