@@ -1,11 +1,12 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import {
   User, Mail, Phone, BookOpen, Building2, Hash,
   Edit3, Save, X, Star, ShieldCheck, GraduationCap,
   CheckCircle2, AlertCircle, Camera, KeyRound, Lock,
-  Sparkles, RefreshCw, Upload, Eye, EyeOff, Palette, Check
+  Sparkles, RefreshCw, Upload, Eye, EyeOff, Palette, Check,
+  Layers, Sliders, Image as ImageIcon
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
@@ -38,33 +39,91 @@ const AVATAR_STYLES = [
   { id: 'fun-emoji', name: 'Fun Emoji', exampleSeed: 'Happy' },
 ];
 
-const PRESET_AVATARS = [
-  { label: 'Student Volunteer', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Volunteer1&backgroundColor=b6e3f4' },
-  { label: 'Faculty Coordinator', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=FacultyLead&backgroundColor=c0aedd' },
-  { label: 'Lead Admin', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=NSSAdmin&backgroundColor=ffd5dc' },
-  { label: 'Tech Explorer', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=TechLeader&backgroundColor=d1d4f9' },
-  { label: 'Eco Champion', url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=EcoWarrior&backgroundColor=b6e3f4' },
-  { label: 'Community Hero', url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Hero2026&backgroundColor=ffdfbf' },
-  { label: 'Creative Designer', url: 'https://api.dicebear.com/7.x/micah/svg?seed=Designer&backgroundColor=ffd5dc' },
-  { label: 'Star Volunteer', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=StarVol&backgroundColor=c0aedd' },
+const PRESET_CATEGORIES = [
+  {
+    name: 'NSS Portal Roles',
+    items: [
+      { label: 'Student Volunteer', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Volunteer1&backgroundColor=b6e3f4' },
+      { label: 'Faculty Coordinator', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=FacultyLead&backgroundColor=c0aedd' },
+      { label: 'Lead Admin', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=NSSAdmin&backgroundColor=ffd5dc' },
+      { label: 'Coordinator Star', url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=CoordStar&backgroundColor=ffdfbf' },
+    ]
+  },
+  {
+    name: 'Stylized Characters',
+    items: [
+      { label: 'Tech Explorer', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=TechLeader&backgroundColor=d1d4f9' },
+      { label: 'Eco Champion', url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=EcoWarrior&backgroundColor=b6e3f4' },
+      { label: 'Creative Designer', url: 'https://api.dicebear.com/7.x/micah/svg?seed=Designer&backgroundColor=ffd5dc' },
+      { label: 'Happy Volunteer', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=StarVol&backgroundColor=c0aedd' },
+    ]
+  }
 ];
 
+// Canvas-based client-side image optimization (resizes and compresses images to ~15KB WebP/JPEG)
+const compressImageFile = (file, maxWidth = 256, maxHeight = 256, quality = 0.85) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 function Avatar({ name, avatarUrl, size = 96, unoptimized = false }) {
+  const [loaded, setLoaded] = useState(false);
   const initials = name
     ? name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : '?';
 
   if (avatarUrl) {
     return (
-      <Image
-        src={avatarUrl}
-        alt={name || 'Avatar'}
-        width={size}
-        height={size}
-        unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('dicebear') || unoptimized}
-        style={{ width: size, height: size }}
-        className="rounded-full object-cover ring-4 ring-white dark:ring-slate-800 shadow-lg bg-slate-100 dark:bg-slate-700"
-      />
+      <div className="relative overflow-hidden rounded-full ring-4 ring-white dark:ring-slate-800 shadow-lg bg-slate-100 dark:bg-slate-700" style={{ width: size, height: size }}>
+        {!loaded && (
+          <div className="absolute inset-0 bg-slate-200 dark:bg-slate-700 animate-pulse flex items-center justify-center text-slate-400 font-bold text-xs">
+            {initials}
+          </div>
+        )}
+        <Image
+          src={avatarUrl}
+          alt={name || 'Avatar'}
+          width={size}
+          height={size}
+          onLoad={() => setLoaded(true)}
+          unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('dicebear') || unoptimized}
+          style={{ width: size, height: size }}
+          className={`rounded-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        />
+      </div>
     );
   }
 
@@ -94,13 +153,14 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-// Interactive Avatar Studio & Picker Modal
+// Optimized Interactive Avatar Studio & Picker Modal
 function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
   const [activeTab, setActiveTab] = useState('PRESETS'); // PRESETS | GENERATOR | UPLOAD
   const [selectedStyle, setSelectedStyle] = useState('avataaars');
   const [seed, setSeed] = useState(name || 'Volunteer');
   const [bgColor, setBgColor] = useState('b6e3f4');
   const [customUrl, setCustomUrl] = useState(currentUrl || '');
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   const bgSwatches = [
@@ -109,8 +169,8 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
     { label: 'Soft Indigo', hex: 'd1d4f9' },
     { label: 'Rose', hex: 'ffd5dc' },
     { label: 'Warm Peach', hex: 'ffdfbf' },
-    { label: 'Emerald', hex: 'a7f3d0' },
-    { label: 'Slate', hex: 'e2e8f0' },
+    { label: 'Emerald Mint', hex: 'a7f3d0' },
+    { label: 'Slate Dark', hex: '334155' },
   ];
 
   const generatedAvatarUrl = `https://api.dicebear.com/7.x/${selectedStyle}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bgColor}`;
@@ -120,24 +180,21 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
     setSeed(randomSeed);
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      alert('File size exceeds 3MB. Please choose a smaller image.');
-      return;
+    setUploading(true);
+    try {
+      // Compress and convert to compact WebP/JPEG data URL
+      const compressedDataUrl = await compressImageFile(file, 256, 256, 0.85);
+      onSelectAvatar(compressedDataUrl);
+      onClose();
+    } catch (err) {
+      alert('Failed to process image file. Please try another image.');
+    } finally {
+      setUploading(false);
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result;
-      if (dataUrl) {
-        onSelectAvatar(dataUrl);
-        onClose();
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -150,8 +207,8 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
               <Palette className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">Avatar Studio & Customizer</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Choose a preset, generate a unique vector avatar, or upload a photo</p>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Avatar Studio Studio & Customizer</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">High-performance vector avatars, instant custom generator & image compression</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition">
@@ -169,7 +226,7 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
-            <Sparkles className="w-4 h-4" /> Presets Gallery
+            <Sparkles className="w-4 h-4" /> Presets
           </button>
           <button
             onClick={() => setActiveTab('GENERATOR')}
@@ -179,7 +236,7 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
                 : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
-            <Palette className="w-4 h-4" /> Custom Generator
+            <Sliders className="w-4 h-4" /> Custom Generator
           </button>
           <button
             onClick={() => setActiveTab('UPLOAD')}
@@ -196,27 +253,33 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
         {/* Content Body */}
         <div className="p-6 overflow-y-auto space-y-6">
           {activeTab === 'PRESETS' && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">Click any avatar below to instantly set it as your profile picture:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {PRESET_AVATARS.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      onSelectAvatar(preset.url);
-                      onClose();
-                    }}
-                    className="flex flex-col items-center p-3 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-logo-teal dark:hover:border-logo-teal bg-slate-50/50 dark:bg-slate-700/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition group"
-                  >
-                    <div className="relative mb-2">
-                      <Avatar name={preset.label} avatarUrl={preset.url} size={64} unoptimized />
-                    </div>
-                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-logo-teal text-center line-clamp-1">
-                      {preset.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
+            <div className="space-y-6">
+              {PRESET_CATEGORIES.map((cat, catIdx) => (
+                <div key={catIdx} className="space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-logo-teal" /> {cat.name}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {cat.items.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          onSelectAvatar(preset.url);
+                          onClose();
+                        }}
+                        className="flex flex-col items-center p-3 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-logo-teal dark:hover:border-logo-teal bg-slate-50/50 dark:bg-slate-700/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition group"
+                      >
+                        <div className="relative mb-2">
+                          <Avatar name={preset.label} avatarUrl={preset.url} size={60} unoptimized />
+                        </div>
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-logo-teal text-center line-clamp-1">
+                          {preset.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -320,8 +383,10 @@ function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
                 <div className="p-3 bg-logo-teal/10 rounded-2xl text-logo-teal mb-3 group-hover:scale-110 transition">
                   <Upload className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Click to upload photo from your device</p>
-                <p className="text-xs text-slate-400 mt-1">Supports PNG, JPG, WEBP or SVG (Max 3MB)</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  {uploading ? 'Compressing & Optimizing Image...' : 'Click to upload photo from your device'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">Images are automatically resized and compressed to 256x256 WebP/JPEG</p>
               </div>
 
               <div className="relative flex py-2 items-center">
