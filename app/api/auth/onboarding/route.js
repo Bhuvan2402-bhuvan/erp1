@@ -41,9 +41,26 @@ export async function POST(req) {
       });
     }
 
-    // Prevent re-onboarding if user already has a completed student or faculty profile
+    // Prevent duplicate onboarding; if profile is already completed, return success with target redirect URL
     if (dbUser && (dbUser.student || dbUser.faculty)) {
-      return NextResponse.json({ message: 'Profile already completed. Re-onboarding is not allowed.' }, { status: 409 });
+      const targetUrl = dbUser.approvalStatus === 'PENDING' ? '/pending' : (dbUser.role === 'FACULTY' ? '/faculty/branch' : '/student/events');
+      const response = NextResponse.json({
+        message: 'Profile already completed.',
+        approvalStatus: dbUser.approvalStatus,
+        redirectUrl: targetUrl
+      }, { status: 200 });
+
+      response.cookies.set('x-user-role', dbUser.role, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 86400
+      });
+      response.cookies.set('x-user-id', dbUser.supabaseUid, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 86400
+      });
+      response.cookies.set('x-user-email', dbUser.email, {
+        httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 86400
+      });
+
+      return response;
     }
 
     if (role === 'FACULTY') {

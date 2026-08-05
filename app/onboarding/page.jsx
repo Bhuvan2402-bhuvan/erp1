@@ -27,6 +27,12 @@ export default function Onboarding() {
     }
 
     if (user) {
+      // Auto-redirect users who already completed their profile
+      if (user.student || user.faculty || user.role === 'ADMIN') {
+        const target = user.approvalStatus === 'PENDING' ? '/pending' : (user.role === 'ADMIN' ? '/admin/overview' : user.role === 'FACULTY' ? '/faculty/branch' : '/student/events');
+        router.push(target);
+        return;
+      }
       const googleName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.name || '';
       if (googleName) {
         setFormData(prev => prev.name ? prev : { ...prev, name: googleName });
