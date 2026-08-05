@@ -1,12 +1,11 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import {
   User, Mail, Phone, BookOpen, Building2, Hash,
   Edit3, Save, X, Star, ShieldCheck, GraduationCap,
   CheckCircle2, AlertCircle, Camera, KeyRound, Lock,
-  Sparkles, RefreshCw, Upload, Eye, EyeOff, Palette, Check,
-  Layers, Sliders, Image as ImageIcon
+  Upload, Eye, EyeOff
 } from 'lucide-react';
 
 const ROLE_CONFIG = {
@@ -30,37 +29,7 @@ const ROLE_CONFIG = {
   },
 };
 
-const AVATAR_STYLES = [
-  { id: 'avataaars', name: 'Personas', exampleSeed: 'Felix' },
-  { id: 'bottts', name: 'Robots & Tech', exampleSeed: 'NSS' },
-  { id: 'lorelei', name: 'Illustrated', exampleSeed: 'Aria' },
-  { id: 'micah', name: 'Modern Art', exampleSeed: 'Leo' },
-  { id: 'adventurer', name: 'Adventurer', exampleSeed: 'Zoe' },
-  { id: 'fun-emoji', name: 'Fun Emoji', exampleSeed: 'Happy' },
-];
-
-const PRESET_CATEGORIES = [
-  {
-    name: 'NSS Portal Roles',
-    items: [
-      { label: 'Student Volunteer', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Volunteer1&backgroundColor=b6e3f4' },
-      { label: 'Faculty Coordinator', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=FacultyLead&backgroundColor=c0aedd' },
-      { label: 'Lead Admin', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=NSSAdmin&backgroundColor=ffd5dc' },
-      { label: 'Coordinator Star', url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=CoordStar&backgroundColor=ffdfbf' },
-    ]
-  },
-  {
-    name: 'Stylized Characters',
-    items: [
-      { label: 'Tech Explorer', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=TechLeader&backgroundColor=d1d4f9' },
-      { label: 'Eco Champion', url: 'https://api.dicebear.com/7.x/lorelei/svg?seed=EcoWarrior&backgroundColor=b6e3f4' },
-      { label: 'Creative Designer', url: 'https://api.dicebear.com/7.x/micah/svg?seed=Designer&backgroundColor=ffd5dc' },
-      { label: 'Happy Volunteer', url: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=StarVol&backgroundColor=c0aedd' },
-    ]
-  }
-];
-
-// Canvas-based client-side image optimization (resizes and compresses images to ~15KB WebP/JPEG)
+// Client-side image optimization (resizes and compresses images to ~15KB JPEG)
 const compressImageFile = (file, maxWidth = 256, maxHeight = 256, quality = 0.85) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -99,7 +68,7 @@ const compressImageFile = (file, maxWidth = 256, maxHeight = 256, quality = 0.85
   });
 };
 
-function Avatar({ name, avatarUrl, size = 96, unoptimized = false }) {
+function Avatar({ name, avatarUrl, size = 96 }) {
   const [loaded, setLoaded] = useState(false);
   const initials = name
     ? name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -119,7 +88,7 @@ function Avatar({ name, avatarUrl, size = 96, unoptimized = false }) {
           width={size}
           height={size}
           onLoad={() => setLoaded(true)}
-          unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('dicebear') || unoptimized}
+          unoptimized={avatarUrl.startsWith('data:') || avatarUrl.includes('dicebear')}
           style={{ width: size, height: size }}
           className={`rounded-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
@@ -153,280 +122,7 @@ function InfoRow({ icon: Icon, label, value }) {
   );
 }
 
-// Optimized Interactive Avatar Studio & Picker Modal
-function AvatarStudioModal({ currentUrl, name, onClose, onSelectAvatar }) {
-  const [activeTab, setActiveTab] = useState('PRESETS'); // PRESETS | GENERATOR | UPLOAD
-  const [selectedStyle, setSelectedStyle] = useState('avataaars');
-  const [seed, setSeed] = useState(name || 'Volunteer');
-  const [bgColor, setBgColor] = useState('b6e3f4');
-  const [customUrl, setCustomUrl] = useState(currentUrl || '');
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const bgSwatches = [
-    { label: 'Sky Blue', hex: 'b6e3f4' },
-    { label: 'Lavender', hex: 'c0aedd' },
-    { label: 'Soft Indigo', hex: 'd1d4f9' },
-    { label: 'Rose', hex: 'ffd5dc' },
-    { label: 'Warm Peach', hex: 'ffdfbf' },
-    { label: 'Emerald Mint', hex: 'a7f3d0' },
-    { label: 'Slate Dark', hex: '334155' },
-  ];
-
-  const generatedAvatarUrl = `https://api.dicebear.com/7.x/${selectedStyle}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bgColor}`;
-
-  const handleRandomize = () => {
-    const randomSeed = Math.random().toString(36).substring(2, 10);
-    setSeed(randomSeed);
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      // Compress and convert to compact WebP/JPEG data URL
-      const compressedDataUrl = await compressImageFile(file, 256, 256, 0.85);
-      onSelectAvatar(compressedDataUrl);
-      onClose();
-    } catch (err) {
-      alert('Failed to process image file. Please try another image.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-logo-teal/10 text-logo-teal">
-              <Palette className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">Avatar Studio Studio & Customizer</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">High-performance vector avatars, instant custom generator & image compression</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-100 dark:border-slate-700 px-6 pt-3 gap-3 bg-white dark:bg-slate-800">
-          <button
-            onClick={() => setActiveTab('PRESETS')}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'PRESETS'
-                ? 'border-logo-teal text-logo-teal'
-                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" /> Presets
-          </button>
-          <button
-            onClick={() => setActiveTab('GENERATOR')}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'GENERATOR'
-                ? 'border-logo-teal text-logo-teal'
-                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
-          >
-            <Sliders className="w-4 h-4" /> Custom Generator
-          </button>
-          <button
-            onClick={() => setActiveTab('UPLOAD')}
-            className={`pb-3 text-xs font-bold uppercase tracking-wider transition border-b-2 flex items-center gap-1.5 ${
-              activeTab === 'UPLOAD'
-                ? 'border-logo-teal text-logo-teal'
-                : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
-          >
-            <Upload className="w-4 h-4" /> Upload / URL
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
-          {activeTab === 'PRESETS' && (
-            <div className="space-y-6">
-              {PRESET_CATEGORIES.map((cat, catIdx) => (
-                <div key={catIdx} className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-logo-teal" /> {cat.name}
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {cat.items.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          onSelectAvatar(preset.url);
-                          onClose();
-                        }}
-                        className="flex flex-col items-center p-3 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-logo-teal dark:hover:border-logo-teal bg-slate-50/50 dark:bg-slate-700/30 hover:bg-teal-50/30 dark:hover:bg-teal-900/20 transition group"
-                      >
-                        <div className="relative mb-2">
-                          <Avatar name={preset.label} avatarUrl={preset.url} size={60} unoptimized />
-                        </div>
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-logo-teal text-center line-clamp-1">
-                          {preset.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'GENERATOR' && (
-            <div className="space-y-6">
-              {/* Preview */}
-              <div className="flex flex-col items-center justify-center p-6 bg-slate-50 dark:bg-slate-700/30 rounded-3xl border border-slate-100 dark:border-slate-700">
-                <div className="relative mb-3">
-                  <Avatar name={seed} avatarUrl={generatedAvatarUrl} size={112} unoptimized />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRandomize}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-logo-teal hover:text-logo-navy dark:hover:text-teal-300 transition"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Randomize Avatar
-                </button>
-              </div>
-
-              {/* Style Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Avatar Art Style</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {AVATAR_STYLES.map((style) => (
-                    <button
-                      key={style.id}
-                      type="button"
-                      onClick={() => setSelectedStyle(style.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium border transition ${
-                        selectedStyle === style.id
-                          ? 'border-logo-teal bg-logo-teal text-white shadow-xs'
-                          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                      }`}
-                    >
-                      {style.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Seed Text Input */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Personality Seed / Name</label>
-                <input
-                  type="text"
-                  value={seed}
-                  onChange={(e) => setSeed(e.target.value)}
-                  placeholder="Type any word or name"
-                  className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-logo-teal"
-                />
-              </div>
-
-              {/* Background Swatches */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Background Tint</label>
-                <div className="flex flex-wrap gap-2">
-                  {bgSwatches.map((swatch) => (
-                    <button
-                      key={swatch.hex}
-                      type="button"
-                      onClick={() => setBgColor(swatch.hex)}
-                      style={{ backgroundColor: `#${swatch.hex}` }}
-                      className={`w-7 h-7 rounded-full border-2 transition flex items-center justify-center ${
-                        bgColor === swatch.hex ? 'border-logo-teal ring-2 ring-logo-teal/40 scale-110' : 'border-white dark:border-slate-800'
-                      }`}
-                      title={swatch.label}
-                    >
-                      {bgColor === swatch.hex && <Check className="w-3.5 h-3.5 text-slate-800" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectAvatar(generatedAvatarUrl);
-                  onClose();
-                }}
-                className="w-full py-3 bg-gradient-to-r from-logo-navy to-logo-teal hover:opacity-95 text-white font-medium rounded-xl text-sm transition shadow-sm"
-              >
-                Use Generated Avatar
-              </button>
-            </div>
-          )}
-
-          {activeTab === 'UPLOAD' && (
-            <div className="space-y-6">
-              {/* File upload drag zone */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-logo-teal rounded-3xl cursor-pointer bg-slate-50/50 dark:bg-slate-700/30 transition group"
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
-                  className="hidden"
-                />
-                <div className="p-3 bg-logo-teal/10 rounded-2xl text-logo-teal mb-3 group-hover:scale-110 transition">
-                  <Upload className="w-6 h-6" />
-                </div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  {uploading ? 'Compressing & Optimizing Image...' : 'Click to upload photo from your device'}
-                </p>
-                <p className="text-xs text-slate-400 mt-1">Images are automatically resized and compressed to 256x256 WebP/JPEG</p>
-              </div>
-
-              <div className="relative flex py-2 items-center">
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                <span className="flex-shrink mx-4 text-xs font-semibold uppercase text-slate-400">Or Image Web URL</span>
-                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-              </div>
-
-              {/* Custom URL Input */}
-              <div className="space-y-3">
-                <input
-                  type="url"
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  placeholder="https://example.com/my-photo.jpg"
-                  className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-logo-teal"
-                />
-                <button
-                  type="button"
-                  disabled={!customUrl.trim()}
-                  onClick={() => {
-                    if (customUrl.trim()) {
-                      onSelectAvatar(customUrl.trim());
-                      onClose();
-                    }
-                  }}
-                  className="w-full py-2.5 bg-logo-teal hover:bg-logo-navy text-white text-sm font-medium rounded-xl transition disabled:opacity-50"
-                >
-                  Apply Custom Image URL
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Password Change Card Component
+// Security & Password Change Card Component
 function PasswordChangeCard({ onToast }) {
   const [passwords, setPasswords] = useState({ newPassword: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -544,8 +240,10 @@ function PasswordChangeCard({ onToast }) {
 export default function ProfileTab({ user, onUpdate }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showStudioModal, setShowStudioModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', msg }
+  const fileInputRef = useRef(null);
+
   const [form, setForm] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
@@ -589,31 +287,32 @@ export default function ProfileTab({ user, onUpdate }) {
     }
   };
 
-  const handleSelectAvatar = async (url) => {
-    setForm((prev) => ({ ...prev, avatarUrl: url }));
-    // Instantly save to backend if not in full edit mode
-    if (!editing) {
-      setSaving(true);
-      try {
-        const res = await fetch('/api/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...form, avatarUrl: url }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          showToast('success', 'Avatar updated successfully!');
-          if (onUpdate) onUpdate(data.user);
-        } else {
-          showToast('error', data.message || 'Failed to update avatar.');
-        }
-      } catch {
-        showToast('error', 'Network error updating avatar.');
-      } finally {
-        setSaving(false);
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 256, 256, 0.85);
+      setForm((prev) => ({ ...prev, avatarUrl: compressedDataUrl }));
+
+      // Automatically save new profile picture
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, avatarUrl: compressedDataUrl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('success', 'Profile picture updated successfully!');
+        if (onUpdate) onUpdate(data.user);
+      } else {
+        showToast('error', data.message || 'Failed to save profile picture.');
       }
-    } else {
-      showToast('success', 'New avatar selected! Click Save Changes when done.');
+    } catch (err) {
+      showToast('error', 'Error processing image upload.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -634,6 +333,15 @@ export default function ProfileTab({ user, onUpdate }) {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 relative">
+      {/* Hidden file input for picture upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml"
+        className="hidden"
+      />
+
       {/* Toast notification */}
       {toast && (
         <div
@@ -652,16 +360,6 @@ export default function ProfileTab({ user, onUpdate }) {
         </div>
       )}
 
-      {/* Avatar Studio Modal */}
-      {showStudioModal && (
-        <AvatarStudioModal
-          currentUrl={form.avatarUrl || user?.avatarUrl}
-          name={form.name || user?.name}
-          onClose={() => setShowStudioModal(false)}
-          onSelectAvatar={handleSelectAvatar}
-        />
-      )}
-
       {/* Hero card */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Banner */}
@@ -673,14 +371,15 @@ export default function ProfileTab({ user, onUpdate }) {
 
         <div className="px-8 pb-8">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-12 mb-6">
-            {/* Avatar with Camera / Studio button */}
+            {/* Avatar with Camera upload button */}
             <div className="relative w-fit group">
               <Avatar name={form.name || user?.name} avatarUrl={form.avatarUrl || user?.avatarUrl} size={96} />
               <button
                 type="button"
-                onClick={() => setShowStudioModal(true)}
-                className="absolute -bottom-1 -right-1 p-2 bg-logo-teal hover:bg-logo-navy text-white rounded-full transition-all shadow-md group-hover:scale-110"
-                title="Open Avatar Studio & Customizer"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 p-2 bg-logo-teal hover:bg-logo-navy text-white rounded-full transition-all shadow-md group-hover:scale-110 disabled:opacity-60"
+                title="Upload Profile Picture"
               >
                 <Camera className="w-4 h-4" />
               </button>
@@ -690,10 +389,12 @@ export default function ProfileTab({ user, onUpdate }) {
             <div className="flex items-center gap-2 mt-12 sm:mt-0">
               <button
                 type="button"
-                onClick={() => setShowStudioModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-60"
               >
-                <Palette className="w-4 h-4 text-logo-teal" /> Avatar Studio
+                <Upload className="w-4 h-4 text-logo-teal" />
+                {uploading ? 'Uploading...' : 'Upload Picture'}
               </button>
 
               {!editing ? (
@@ -782,13 +483,13 @@ export default function ProfileTab({ user, onUpdate }) {
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Avatar Picture URL</label>
+                  <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Profile Picture URL</label>
                   <button
                     type="button"
-                    onClick={() => setShowStudioModal(true)}
+                    onClick={() => fileInputRef.current?.click()}
                     className="text-xs font-semibold text-logo-teal hover:underline flex items-center gap-1"
                   >
-                    <Palette className="w-3 h-3" /> Custom Studio
+                    <Upload className="w-3 h-3" /> Upload File
                   </button>
                 </div>
                 <input
