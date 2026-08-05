@@ -27,8 +27,11 @@ export default function CoordinatorCreateEvent() {
     e.preventDefault();
     const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(eventForm) });
     if (res.ok) {
-      toast.success('Event created successfully');
+      const data = await res.json();
+      const newEventId = data.event?.id;
+      toast.success('Event posted! Directing to Attendance section...');
       setEventForm({ title: '', description: '', date: '', location: '', type: 'ACTIVITY' });
+      router.push(`/student/attendance?eventId=${newEventId || ''}&openScanner=true`);
     } else {
       const data = await res.json();
       toast.error(data.message || 'Failed to create event');

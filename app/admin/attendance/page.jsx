@@ -1,22 +1,38 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
-  ClipboardCheck, Search, Download, CheckCircle, XCircle, Users, Calendar, Filter, RefreshCw
+  ClipboardCheck, Search, Download, CheckCircle, XCircle, Users, RefreshCw, QrCode
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import QRScannerModal from '@/components/QRScannerModal';
 
-export default function AdminAttendancePage() {
+function AdminAttendanceContent() {
+  const searchParams = useSearchParams();
+  const eventIdParam = searchParams.get('eventId');
+  const openScannerParam = searchParams.get('openScanner');
+
   const [attendances, setAttendances] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ totalRecords: 0, presentCount: 0, absentCount: 0, attendanceRate: 0 });
   const [loading, setLoading] = useState(true);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   // Filters
   const [search, setSearch] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedEvent, setSelectedEvent] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    if (eventIdParam) {
+      setSelectedEvent(eventIdParam);
+    }
+    if (openScannerParam === 'true') {
+      setIsScannerOpen(true);
+    }
+  }, [eventIdParam, openScannerParam]);
 
   const fetchDepartments = async () => {
     try {
@@ -90,13 +106,28 @@ export default function AdminAttendancePage() {
           </p>
         </div>
 
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal text-white text-sm font-semibold rounded-xl hover:opacity-90 transition shadow-sm"
-        >
-          <Download className="w-4 h-4" /> Export CSV Report
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-logo-teal text-white text-sm font-bold rounded-xl hover:opacity-90 transition shadow-sm"
+          >
+            <QrCode className="w-4 h-4" /> Scan Attendance QR
+          </button>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal text-white text-sm font-semibold rounded-xl hover:opacity-90 transition shadow-sm"
+          >
+            <Download className="w-4 h-4" /> Export CSV Report
+          </button>
+        </div>
       </div>
+
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        events={events}
+        onAttendanceMarked={fetchAttendance}
+      />
 
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -260,5 +291,13 @@ export default function AdminAttendancePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AdminAttendancePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading Attendance Audit...</div>}>
+      <AdminAttendanceContent />
+    </Suspense>
   );
 }

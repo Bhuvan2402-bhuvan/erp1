@@ -83,6 +83,7 @@ export const POST = withAuth(async (req, { user }) => {
     }
 
     const { title, description, date, endDate, location, type } = validated;
+    const qrCode = body.qrCode || `NSS-EVT-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     const event = await prisma.event.create({
       data: {
@@ -92,6 +93,7 @@ export const POST = withAuth(async (req, { user }) => {
         endDate: endDate ? new Date(endDate) : null,
         location,
         type: type || 'ACTIVITY',
+        qrCode,
         createdById: dbUser.id
       }
     });

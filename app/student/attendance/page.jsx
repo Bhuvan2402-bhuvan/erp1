@@ -1,18 +1,44 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
-  ClipboardCheck, Search, CheckCircle, XCircle, Award, Calendar, RefreshCw
+  ClipboardCheck, Search, CheckCircle, XCircle, Award, Calendar, RefreshCw, QrCode, Camera
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import StudentQRModal from '@/components/StudentQRModal';
+import VolunteerQRScannerModal from '@/components/VolunteerQRScannerModal';
 
-export default function StudentAttendancePage() {
+function StudentAttendanceContent() {
+  const searchParams = useSearchParams();
+  const eventIdParam = searchParams.get('eventId');
+  const openScannerParam = searchParams.get('openScanner');
+
   const [attendances, setAttendances] = useState([]);
   const [stats, setStats] = useState({ totalRecords: 0, presentCount: 0, absentCount: 0, attendanceRate: 0 });
   const [loading, setLoading] = useState(true);
-  
+  const [dbUser, setDbUser] = useState(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
   // Filters
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    if (openScannerParam === 'true') {
+      setIsScannerOpen(true);
+    }
+  }, [openScannerParam]);
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setDbUser(data.user);
+      }
+    } catch (e) {}
+  };
 
   const fetchAttendance = useCallback(async () => {
     setLoading(true);
@@ -36,21 +62,51 @@ export default function StudentAttendancePage() {
   }, [search, statusFilter]);
 
   useEffect(() => {
+    fetchUser();
     fetchAttendance();
   }, [fetchAttendance]);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ClipboardCheck className="w-7 h-7 text-logo-teal" />
-          My Attendance & Service Records
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          View your complete event attendance log, verified presences, and service history.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ClipboardCheck className="w-7 h-7 text-logo-teal" />
+            My Attendance & Service Records
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            View your complete event attendance log, verified presences, and service history.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal text-white text-xs font-bold rounded-2xl hover:opacity-90 transition shadow-sm"
+          >
+            <Camera className="w-4 h-4" /> Scan Event QR
+          </button>
+          <button
+            onClick={() => setIsQRModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-2xl transition shadow-sm"
+          >
+            <QrCode className="w-4 h-4 text-logo-teal" /> Pass Badge
+          </button>
+        </div>
       </div>
+
+      <StudentQRModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        studentData={dbUser}
+      />
+
+      <VolunteerQRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onAttendanceMarked={fetchAttendance}
+      />
 
       {/* Summary Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -183,5 +239,13 @@ export default function StudentAttendancePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function StudentAttendancePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading Student Attendance...</div>}>
+      <StudentAttendanceContent />
+    </Suspense>
   );
 }

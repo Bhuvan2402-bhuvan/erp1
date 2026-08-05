@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { Camera, Calendar, QrCode } from 'lucide-react';
+import VolunteerQRScannerModal from '@/components/VolunteerQRScannerModal';
 
 const EventDetailsModal = dynamic(() => import('@/components/EventDetailsModal'), {
   loading: () => <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center"><div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-xl"><p className="text-slate-500 animate-pulse">Loading...</p></div></div>,
@@ -14,6 +16,7 @@ export default function StudentEvents() {
   const [loading, setLoading] = useState(true);
   const [dbUser, setDbUser] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   const fetchData = useCallback(async (p = 1) => {
     setLoading(true);
@@ -62,7 +65,29 @@ export default function StudentEvents() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">NSS Events</h2>
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Calendar className="w-6 h-6 text-logo-teal" /> NSS Events & Activity Gate
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">Register for upcoming camps, workshops, and verify attendance via QR scanning.</p>
+        </div>
+
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal text-white text-xs font-bold rounded-2xl hover:opacity-90 transition shadow-md"
+        >
+          <Camera className="w-4 h-4" /> Scan Event Attendance QR
+        </button>
+      </div>
+
+      <VolunteerQRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onAttendanceMarked={() => fetchData(page)}
+      />
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {events.map(e => (
           <div key={e.id} className={`${cardClass} p-5 cursor-pointer hover:shadow-md hover:border-logo-teal/30 transition-all`} onClick={() => setSelectedEventId(e.id)}>
@@ -100,8 +125,8 @@ export default function StudentEvents() {
         <EventDetailsModal
           eventId={selectedEventId}
           onClose={() => setSelectedEventId(null)}
-          currentUser={dbUser}
-          onRefresh={() => fetchData(page)}
+          currentUserId={dbUser?.id}
+          currentUserRole={dbUser?.role}
         />
       )}
     </div>

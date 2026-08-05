@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VVITU NSS ERP - Interactive Presentation Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-cyan: #06b6d4;
+      --shadow-glow: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header Bar */
+    header {
+      height: 60px;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.25rem;
+      background: linear-gradient(90deg, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid var(--accent-primary);
+      color: #a5b4fc;
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      -webkit-text-fill-color: initial;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      border-color: var(--accent-hover);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Main Presentation Container */
+    main {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .slide {
+      position: absolute;
+      width: 90%;
+      max-width: 1280px;
+      height: 82vh;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 3rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--shadow-glow);
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: scale(0.96) translateY(20px);
+      pointer-events: none;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+    }
+
+    /* Slide Content Typography */
+    .slide-header {
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 1rem;
+    }
+
+    .slide-tag {
+      color: #818cf8;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .slide-title {
+      font-family: var(--font-heading);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.2;
+    }
+
+    .slide-number {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Grids & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .feature-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.2);
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #f8fafc;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Data Table Styling */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.6);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: rgba(30, 41, 59, 0.9);
+      color: #a5b4fc;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      font-family: var(--font-heading);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-admin { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .badge-faculty { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-coord { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-vol { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); }
+
+    /* Speaker Notes Bar */
+    .speaker-notes {
+      margin-top: 1.5rem;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px dashed rgba(99, 102, 241, 0.3);
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+    .notes-icon { font-size: 1.1rem; color: #818cf8; }
+
+    /* Footer / Control Bar */
+    footer {
+      height: 65px;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      max-width: 400px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 0 1.5rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6366f1, #c084fc);
+      transition: width 0.3s ease;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* Modal / Menu Drawer */
+    .menu-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .menu-modal.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .menu-content {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .menu-item {
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .menu-item:hover {
+      border-color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span>VVITU NSS ERP</span>
+      <span class="brand-badge">Feature & Account Deck</span>
+    </div>
+    <div class="header-controls">
+      <button class="btn" id="btn-toggle-notes">🗣️ Speaker Notes</button>
+      <button class="btn" id="btn-menu">📜 Slide Index</button>
+      <button class="btn btn-primary" id="btn-fullscreen">⛶ Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Main Slide Display Area -->
+  <main id="presentation-container">
+
+    <!-- Slide 1 -->
+    <div class="slide active" data-slide="1">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 01 // Executive Overview</div>
+          <h1 class="slide-title">VVITU NSS ERP Platform</h1>
+        </div>
+        <div class="slide-number">01 / 14</div>
+      </div>
+      <div class="slide-body">
+        <p style="font-size: 1.1rem; color: #cbd5e1; line-height: 1.6;">
+          A Centralized, Role-Governed Enterprise Resource Planning & Anti-Proxy Attendance Platform tailored for Academic Volunteering Drives, Financial Ledgers, and Grievance Resolution.
+        </p>
+        <div class="grid-4">
+          <div class="feature-card">
+            <div class="card-icon">🔐</div>
+            <div class="card-title">Role Governance</div>
+            <div class="card-desc">Hard-capped account limits for Admin (4), Faculty (15), and Coordinators (20).</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🗺️</div>
+            <div class="card-title">25+ Page Routes</div>
+            <div class="card-desc">Dedicated, role-segregated navigation interfaces for all 5 tier user accounts.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🛡️</div>
+            <div class="card-title">Anti-Proxy QR</div>
+            <div class="card-desc">Time-sensitive TOTP dynamic QR code verification with audit signatures.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">📦</div>
+            <div class="card-title">1-Click Backup</div>
+            <div class="card-desc">Complete JSON data export for financial records, attendance logs, and reports.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Welcome everyone. Today we present the complete feature deck of VVITU NSS ERP, demonstrating how over 25 page routes and 5 role account tiers solve attendance fraud, financial tracking, and governance issues.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" data-slide="2">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 02 // Governance Framework</div>
+          <h1 class="slide-title">System Roles & Quota Caps</h1>
+        </div>
+        <div class="slide-number">02 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Role Tier Account</th>
+                <th>Account Quota Cap</th>
+                <th>Registration Path</th>
+                <th>Core Permissions & Scope</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-vol">Public Visitor</span></td>
+                <td>Unlimited</td>
+                <td>Unauthenticated Guest Access</td>
+                <td>Read-only public statistics & anonymized verified volunteer roster</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-vol">Student Volunteer</span></td>
+                <td>Unlimited</td>
+                <td>Self Sign-Up (/signup)</td>
+                <td>Event registration, QR attendance scan, profile & myBharat management</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-coord">Student Coordinator</span></td>
+                <td><strong style="color: #6ee7b7;">Capped at 20</strong></td>
+                <td>Promoted by Faculty/Admin</td>
+                <td>Branch volunteer roster, point allocation modal, misconduct warning notices</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-faculty">Faculty Coordinator</span></td>
+                <td><strong style="color: #fde68a;">Capped at 15</strong></td>
+                <td>Faculty Sign-Up -> Admin Approval</td>
+                <td>Department operations, finance ledger, circular broadcasts, JSON backups</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-admin">System Admin</span></td>
+                <td><strong style="color: #fda4af;">Capped at 4</strong></td>
+                <td>Super Admin Provisioning</td>
+                <td>Master overview dashboard, universal user approvals, full database backup</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Role quotas are strictly validated at signup, promotion, and approval endpoints. Attempting to create a 5th Admin or 21st Student Coordinator triggers automatic quota validation errors.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" data-slide="3">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 03 // Technical Stack</div>
+          <h1 class="slide-title">System Architecture & Tech Stack</h1>
+        </div>
+        <div class="slide-number">03 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="feature-card">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">Frontend Framework</div>
+            <div class="card-desc">Next.js 14 App Router, React 18, TailwindCSS, Framer Motion for smooth micro-animations.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🗄️</div>
+            <div class="card-title">Database & ORM</div>
+            <div class="card-desc">Prisma Client ORM paired with PostgreSQL hosted on Supabase Cloud.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-icon">🔒</div>
+            <div class="card-title">Security Layers</div>
+            <div class="card-desc">Next.js Middleware RBAC, HTTPOnly JWT Cookies, Zod Payload Validation, Sliding-Window IP Rate Limiter.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> All incoming requests pass through Middleware RBAC checking JWT cookies before reaching Next.js serverless route handlers and Prisma ORM.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide" data-slide="4">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 04 // Public Portal</div>
+          <h1 class="slide-title">Public Visitor Portal & Unauthenticated Pages</h1>
+        </div>
+        <div class="slide-number">04 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">🌐 Landing Page (<code>/</code>)</div>
+            <div class="card-desc">
+              • Platform overview & value proposition.<br>
+              • Interactive FAQ accordion (<code>LandingFaqs.jsx</code>).<br>
+              • Direct links to Sign-In, Sign-Up, and Visitor Portal.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📊 Visitor Portal (<code>/visitor</code>)</div>
+            <div class="card-desc">
+              • Live impact counter (Volunteers, Coordinators, Faculty, Completed Drives).<br>
+              • Searchable & branch-filtered verified volunteer directory.<br>
+              • Achievement tier badges (Bronze, Silver, Gold, Platinum).
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🛡️ Privacy Shield Control</div>
+            <div class="card-desc">
+              • Masks phone numbers, personal email addresses, and street addresses from public API payloads.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🔑 Auth Gate (<code>/login</code>, <code>/signup</code>)</div>
+            <div class="card-desc">
+              • Secure credentials sign-in.<br>
+              • Role selection sign-up with dynamic quota enforcement.
+            </div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> The visitor portal allows parents and external auditors to verify volunteer records while strict privacy filters protect student contact information.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide" data-slide="5">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 05 // Student Panel</div>
+          <h1 class="slide-title">Student Volunteer Experience</h1>
+        </div>
+        <div class="slide-number">05 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="feature-card">
+            <div class="card-title">📅 Events Feed (<code>/student/events</code>)</div>
+            <div class="card-desc">Browse upcoming, ongoing, and completed volunteering campaigns with 1-click registration.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📱 QR Gate (<code>/student/attendance</code>)</div>
+            <div class="card-desc">Present personal student QR code or scan dynamic TOTP codes generated by coordinators.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">👤 myBharat Profile (<code>/student/profile</code>)</div>
+            <div class="card-desc">Manage bio, avatar, and store official <code>myBharatId</code> and verified certificate link.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📜 Portfolio (<code>/student/portfolio</code>)</div>
+            <div class="card-desc">Service summary logging total hours, attended drives, score, and downloadable certificates.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📩 1:1 Issues (<code>/student/issues</code>)</div>
+            <div class="card-desc">Lodge private grievance tickets directly with department leaders (Track <code>NOT_SOLVED</code> vs <code>SOLVED</code>).</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">💬 Chat & Docs (<code>/student/chat</code>)</div>
+            <div class="card-desc">Real-time messaging with peers/mentors and downloading official circular reports.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Student volunteers get a unified dashboard to manage event participation, track attendance, check points, lodge grievances, and download service certificates.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide" data-slide="6">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 06 // Coordinator Operations</div>
+          <h1 class="slide-title">Student Coordinator Operations</h1>
+        </div>
+        <div class="slide-number">06 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">👥 Branch Roster (<code>/student/volunteers</code>)</div>
+            <div class="card-desc">View department volunteers, search by roll number, and approve pending branch sign-ups with 1-click.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">⭐ Allot Points Tool (Modal)</div>
+            <div class="card-desc">Award performance points (+10, +20) with custom reason notes to branch volunteers.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">⚠️ Misconduct Warning Engine</div>
+            <div class="card-desc">Issue official warning notices with proof URLs for proxy attempts or unexcused absences.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">➕ Event Creation Drive (<code>/student/create-event</code>)</div>
+            <div class="card-desc">Launch new volunteering activities specifying title, category, venue, capacity, and banner photo.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Student coordinators act as frontline leaders. They approve new department members, award service points, file warning notices, and resolve volunteer grievances.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide" data-slide="7">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 07 // Faculty Operations</div>
+          <h1 class="slide-title">Faculty Coordinator Governance</h1>
+        </div>
+        <div class="slide-number">07 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">🏢 Branch Control (<code>/faculty/branch</code>)</div>
+            <div class="card-desc">Promote Student Coordinators (quota checked max 20) and assign faculty mentors to student groups.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">💰 Financial Ledger (<code>/faculty/finance</code>)</div>
+            <div class="card-desc">Log Income, Expenses, and Budgets with receipt file links and automated balance calculation equations.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📢 Circular Broadcast Engine (<code>/faculty/announcements</code>)</div>
+            <div class="card-desc">Dispatch circular notices that instantly trigger notifications for 100% of active volunteers.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📦 Data Backup Hub (<code>/faculty/backup</code>)</div>
+            <div class="card-desc">1-Click JSON data export for financial records, document archives, and audited attendance logs.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Faculty members manage departmental finances with digital receipt links, broadcast circular notices directly to student devices, and execute 1-click JSON backups.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide" data-slide="8">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 08 // Admin Control</div>
+          <h1 class="slide-title">System Administrator Master Deck</h1>
+        </div>
+        <div class="slide-number">08 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-3">
+          <div class="feature-card">
+            <div class="card-title">📊 Executive Dashboard (<code>/admin/overview</code>)</div>
+            <div class="card-desc">Master metrics dashboard displaying total users, active drives, financial totals, and live quota counters.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">⚡ Approvals Center (<code>/admin/approvals</code>)</div>
+            <div class="card-desc">Universal queue for pending registrations across all departments with 1-click Approve / Reject buttons.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🏢 Branch & Faculty Setup</div>
+            <div class="card-desc">Create academic departments (CSE, ECE, MECH), manage faculty rosters, and set employee IDs.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📩 Master Grievances (<code>/admin/issues</code>)</div>
+            <div class="card-desc">System-wide complaint monitoring table with status toggles (<code>NOT_SOLVED</code> / <code>SOLVED</code>).</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📦 System Data Backup (<code>/admin/backup</code>)</div>
+            <div class="card-desc">Full system snapshot export (JSON bundle) containing all database models for data sovereignty.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">💬 Admin Real-time Chat</div>
+            <div class="card-desc">Global administrative communication channels with faculty and student leaders.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Super administrators hold overall governance over user approvals, quota tracking, global grievance monitoring, and full system backup exports.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide" data-slide="9">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 09 // Deep Dive 1</div>
+          <h1 class="slide-title">Anti-Proxy QR Attendance & Gamified Points</h1>
+        </div>
+        <div class="slide-number">09 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">🛡️ Anti-Proxy TOTP QR Gate</div>
+            <div class="card-desc">
+              • Time-sensitive TOTP QR generator on coordinator device.<br>
+              • Prevents attendance fraud via screenshot sharing.<br>
+              • Logs timestamped records with student ID, event ID, presence, and auditor signature.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🏆 Gamified Points & Tier Badges</div>
+            <div class="card-desc">
+              • 🥉 <strong>Bronze Badge</strong>: 0 – 49 Points<br>
+              • 🥈 <strong>Silver Badge</strong>: 50 – 149 Points<br>
+              • 🥇 <strong>Gold Badge</strong>: 150 – 299 Points<br>
+              • 💎 <strong>Platinum Badge</strong>: 300+ Points
+            </div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> By dynamic TOTP generation, attendance cannot be faked via shared screenshots. Points directly drive achievement tier badges.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide" data-slide="10">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 10 // Deep Dive 2</div>
+          <h1 class="slide-title">Financial Ledger & Circular Broadcasts</h1>
+        </div>
+        <div class="slide-number">10 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">💰 Financial Ledger Engine</div>
+            <div class="card-desc">
+              • Mathematical Balance Equation:<br>
+              &nbsp;&nbsp;<code>Remaining = (Budget + Income) - Expenses</code><br>
+              • Attachment of receipt file links (<code>receiptUrl</code>).<br>
+              • Categories: Event, Equipment, Refreshments, Travel, Misc.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📢 Circular Broadcasting Engine</div>
+            <div class="card-desc">
+              • Triggered on posting circular announcements.<br>
+              • Bypasses group chat noise by writing instant push notification records for <strong>100% of active volunteers</strong>.
+            </div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> The financial ledger ensures zero financial ambiguity, while circular broadcasts guarantee instant notification delivery to all registered students.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11 -->
+    <div class="slide" data-slide="11">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 11 // Deep Dive 3</div>
+          <h1 class="slide-title">1:1 Complaints & Data Backup Engine</h1>
+        </div>
+        <div class="slide-number">11 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">📩 1:1 Grievance Resolution Box</div>
+            <div class="card-desc">
+              • Direct 1:1 private complaint lodging.<br>
+              • Status tracking: <code>NOT_SOLVED</code> (Open) vs <code>SOLVED</code> (Resolved).<br>
+              • Solver tracking storing <code>resolvedById</code> and timestamp.
+            </div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📦 Institutional Data Backup Engine</div>
+            <div class="card-desc">
+              • 1-Click JSON data export via <code>/api/backup?type=...</code><br>
+              • Finance Records, Documentation, Event Reports, Attendance Logs.<br>
+              • Guarantees offline data sovereignty and institutional compliance.
+            </div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Complaint status changes cleanly from NOT_SOLVED to SOLVED. The 1-click backup hub ensures complete institutional data ownership.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 12 -->
+    <div class="slide" data-slide="12">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 12 // Page Mapping</div>
+          <h1 class="slide-title">Master Page Route & Account Feature Matrix</h1>
+        </div>
+        <div class="slide-number">12 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="table-container" style="max-height: 52vh;">
+          <table>
+            <thead>
+              <tr>
+                <th>Page Route</th>
+                <th>Public Guest</th>
+                <th>Volunteer</th>
+                <th>Student Coord</th>
+                <th>Faculty Coord</th>
+                <th>System Admin</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>/</code> & <code>/visitor</code></td><td>✅ Public</td><td>✅ View</td><td>✅ View</td><td>✅ View</td><td>✅ View</td></tr>
+              <tr><td><code>/student/events</code></td><td>❌</td><td>✅ Register</td><td>✅ Register</td><td>View</td><td>View</td></tr>
+              <tr><td><code>/student/attendance</code></td><td>❌</td><td>✅ Scan QR</td><td>✅ Scan/Generate</td><td>Scan/Generate</td><td>Scan/Generate</td></tr>
+              <tr><td><code>/student/profile</code> & <code>/portfolio</code></td><td>❌</td><td>✅ Full Control</td><td>✅ Full Control</td><td>View</td><td>View</td></tr>
+              <tr><td><code>/student/volunteers</code></td><td>❌</td><td>❌</td><td>✅ Manage Branch</td><td>✅ Manage Branch</td><td>Full Control</td></tr>
+              <tr><td><code>/student/create-event</code></td><td>❌</td><td>❌</td><td>✅ Create Drive</td><td>✅ Create Drive</td><td>Full Control</td></tr>
+              <tr><td><code>/faculty/branch</code></td><td>❌</td><td>❌</td><td>❌</td><td>✅ Operations</td><td>Full Control</td></tr>
+              <tr><td><code>/faculty/finance</code></td><td>❌</td><td>❌</td><td>View Records</td><td>✅ Ledger Control</td><td>Full Control</td></tr>
+              <tr><td><code>/faculty/announcements</code></td><td>❌</td><td>❌</td><td>❌</td><td>✅ Broadcast All</td><td>Broadcast All</td></tr>
+              <tr><td><code>/faculty/backup</code></td><td>❌</td><td>❌</td><td>❌</td><td>✅ Export JSON</td><td>Export JSON</td></tr>
+              <tr><td><code>/admin/overview</code> & <code>/approvals</code></td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅ Master Control</td></tr>
+              <tr><td><code>/admin/backup</code></td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>✅ Master Backup</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Over 25 page routes enforce distinct access permissions, ensuring users only access features appropriate to their account tier.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide" data-slide="13">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 13 // Security & Hardening</div>
+          <h1 class="slide-title">Security & Rate Limiting Framework</h1>
+        </div>
+        <div class="slide-number">13 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">🛡️ IP Rate Limiting (<code>lib/rate-limit.js</code>)</div>
+            <div class="card-desc">Sliding-window IP rate limiting protects authentication endpoints against brute-force attacks.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">📝 Zod Schema Validation (<code>lib/validations.js</code>)</div>
+            <div class="card-desc">Strict schema validation sanitizes all request payloads before hitting database handlers.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🔒 API Response Sanitizer</div>
+            <div class="card-desc">Global helper wrappers mask raw database tracebacks to prevent schema leakage.</div>
+          </div>
+          <div class="feature-card">
+            <div class="card-title">🌐 Security Headers</div>
+            <div class="card-desc">Configured with <code>X-Frame-Options: DENY</code>, <code>nosniff</code>, and strict referrer policy.</div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Security is integrated at all layers—from IP rate limiting to Zod payload validation and error sanitization.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 14 -->
+    <div class="slide" data-slide="14">
+      <div class="slide-header">
+        <div>
+          <div class="slide-tag">Slide 14 // Conclusion</div>
+          <h1 class="slide-title">Conclusion & Live Impact</h1>
+        </div>
+        <div class="slide-number">14 / 14</div>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="feature-card">
+            <div class="card-title">✅ Key System Deliverables</div>
+            <div class="card-desc">
+              1. Eliminated proxy attendance fraud with dynamic TOTP QR code checks.<br>
+              2. Enforced strict account quota limits (4 Admins | 15 Faculty | 20 Coordinators).<br>
+              3. Guaranteed 100% notification reach via circular broadcasts.<br>
+              4. Delivered financial transparency with receipt attachment links.<br>
+              5. Provided 1-click JSON backup export for institutional compliance.
+            </div>
+          </div>
+          <div class="feature-card" style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
+            <h2 style="font-family: var(--font-heading); color: #818cf8; margin-bottom: 1rem;">Thank You!</h2>
+            <p style="color: #cbd5e1; font-size: 1rem; margin-bottom: 1.5rem;">Questions & Answers Session</p>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">
+              🌐 GitHub: github.com/Bhuvan2402-bhuvan/erp1<br>
+              📧 Contact: yenugabhuvanamohanchowdary@gmail.com
+            </div>
+          </div>
+        </div>
+        <div class="speaker-notes">
+          <span class="notes-icon">🗣️</span>
+          <div><strong>Speaker Notes:</strong> Thank you for your attention! We are now open to taking questions about any of the features, account quotas, or page routes.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer Navigation Bar -->
+  <footer>
+    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+      <span id="slide-indicator">Slide 1 of 14</span>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn" id="btn-prev">◄ Previous</button>
+      <button class="btn btn-primary" id="btn-next">Next ►</button>
+    </div>
+  </footer>
+
+  <!-- Menu Drawer Modal -->
+  <div class="menu-modal" id="menu-modal">
+    <div class="menu-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-family: var(--font-heading); color: #fff;">Slide Index Navigator</h2>
+        <button class="btn" id="btn-close-menu">✕ Close</button>
+      </div>
+      <div class="menu-grid" id="menu-grid">
+        <!-- Dynamically generated -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 14;
+    let showNotes = true;
+
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progress-bar');
+    const slideIndicator = document.getElementById('slide-indicator');
+    const menuModal = document.getElementById('menu-modal');
+    const menuGrid = document.getElementById('menu-grid');
+
+    function updateSlide(newSlideIndex) {
+      if (newSlideIndex < 1 || newSlideIndex > totalSlides) return;
+
+      slides.forEach(slide => slide.classList.remove('active'));
+
+      currentSlide = newSlideIndex;
+      const targetSlide = document.querySelector(`.slide[data-slide="${currentSlide}"]`);
+      if (targetSlide) targetSlide.classList.add('active');
+
+      // Update progress & labels
+      const progressPercent = ((currentSlide - 1) / (totalSlides - 1)) * 100;
+      progressBar.style.width = `${progressPercent}%`;
+      slideIndicator.textContent = `Slide ${currentSlide} of ${totalSlides}`;
+    }
+
+    document.getElementById('btn-next').addEventListener('click', () => updateSlide(currentSlide + 1));
+    document.getElementById('btn-prev').addEventListener('click', () => updateSlide(currentSlide - 1));
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') {
+        updateSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft') {
+        updateSlide(currentSlide - 1);
+      } else if (e.key === 'Escape') {
+        menuModal.classList.remove('active');
+      }
+    });
+
+    // Toggle speaker notes
+    document.getElementById('btn-toggle-notes').addEventListener('click', () => {
+      showNotes = !showNotes;
+      document.querySelectorAll('.speaker-notes').forEach(el => {
+        el.style.display = showNotes ? 'flex' : 'none';
+      });
+    });
+
+    // Fullscreen toggle
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+      }
+    });
+
+    // Build Menu Drawer
+    function buildMenu() {
+      menuGrid.innerHTML = '';
+      slides.forEach((slide, index) => {
+        const slideNum = index + 1;
+        const title = slide.querySelector('.slide-title').textContent;
+        const tag = slide.querySelector('.slide-tag').textContent;
+
+        const item = document.createElement('div');
+        item.className = 'menu-item';
+        item.innerHTML = `
+          <div style="font-size: 0.75rem; color: #818cf8; font-weight: 700; margin-bottom: 0.25rem;">${tag}</div>
+          <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem;">${title}</div>
+        `;
+        item.addEventListener('click', () => {
+          updateSlide(slideNum);
+          menuModal.classList.remove('active');
+        });
+        menuGrid.appendChild(item);
+      });
+    }
+
+    document.getElementById('btn-menu').addEventListener('click', () => {
+      buildMenu();
+      menuModal.classList.add('active');
+    });
+
+    document.getElementById('btn-close-menu').addEventListener('click', () => {
+      menuModal.classList.remove('active');
+    });
+
+    // Initialize first slide state
+    updateSlide(1);
+  </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { validate, signupSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
 import { supabaseAdmin } from '@/lib/supabase/admin';
+import { sendAccountCreatedEmail } from '@/lib/email';
 
 const signupLimiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 500 });
 
@@ -130,6 +131,9 @@ export async function POST(req) {
         })
       }).catch(err => console.error('Webhook sync failed:', err));
     }
+
+    // Send account creation confirmation email
+    sendAccountCreatedEmail({ name, email, role }).catch(err => console.error('Failed sending account confirmation:', err));
 
     return NextResponse.json({
       message: 'Registration successful! Your account is pending coordinator approval.'

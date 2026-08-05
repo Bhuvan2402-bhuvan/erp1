@@ -11,6 +11,7 @@ export default function Onboarding() {
   const [role, setRole] = useState('STUDENT');
   
   const [formData, setFormData] = useState({
+    name: '',
     departmentId: '', 
     rollNo: '', year: '', section: '', semester: '1',
     employeeId: '', designation: ''
@@ -23,6 +24,13 @@ export default function Onboarding() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
+    }
+
+    if (user) {
+      const googleName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.name || '';
+      if (googleName) {
+        setFormData(prev => prev.name ? prev : { ...prev, name: googleName });
+      }
     }
 
     fetch('/api/departments')
@@ -48,9 +56,15 @@ export default function Onboarding() {
       const data = await res.json();
 
       if (res.ok) {
-        // Redirect to appropriate dashboard based on selected role
-        if (role === 'FACULTY') window.location.href = '/faculty';
-        else window.location.href = '/student';
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        } else if (data.approvalStatus === 'PENDING') {
+          window.location.href = '/pending';
+        } else if (role === 'FACULTY') {
+          window.location.href = '/faculty/branch';
+        } else {
+          window.location.href = '/student/events';
+        }
       } else {
         setError(data.message);
       }
@@ -106,6 +120,13 @@ export default function Onboarding() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Full Name</label>
+                <div className="mt-1">
+                  <input name="name" type="text" value={formData.name || ''} required onChange={handleChange} placeholder="Enter your full name" className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logo-teal focus:border-logo-teal sm:text-sm dark:bg-slate-700 dark:text-white" />
+                </div>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Branch / Department</label>
                 <div className="mt-1">

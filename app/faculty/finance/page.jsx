@@ -1,12 +1,15 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Wallet, FileText } from 'lucide-react';
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Wallet, FileText, Building2, Filter } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, totalBudget: 0, balance: 0 });
+  const [departments, setDepartments] = useState([]);
+  const [branchSummaries, setBranchSummaries] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
 
   const [title, setTitle] = useState('');
@@ -15,23 +18,27 @@ export default function FinancePage() {
   const [category, setCategory] = useState('Event');
   const [description, setDescription] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const loadFinance = () => {
+  const loadFinance = (deptFilter = selectedBranch) => {
     setLoading(true);
-    fetch('/api/finance')
+    const url = deptFilter ? `/api/finance?departmentId=${encodeURIComponent(deptFilter)}` : '/api/finance';
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.records) setRecords(data.records);
         if (data.summary) setSummary(data.summary);
+        if (data.departments) setDepartments(data.departments);
+        if (data.branchSummaries) setBranchSummaries(data.branchSummaries);
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    loadFinance();
-  }, []);
+    loadFinance(selectedBranch);
+  }, [selectedBranch]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -44,14 +51,22 @@ export default function FinancePage() {
       const res = await fetch('/api/finance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, amount, type, category, description, receiptUrl })
+        body: JSON.stringify({
+          title,
+          amount,
+          type,
+          category,
+          description,
+          receiptUrl,
+          departmentId: departmentId || null
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      toast.success('Finance record added!');
+      toast.success('Branch financial record added!');
       setModalOpen(false);
-      setTitle(''); setAmount(''); setDescription(''); setReceiptUrl('');
-      loadFinance();
+      setTitle(''); setAmount(''); setDescription(''); setReceiptUrl(''); setDepartmentId('');
+      loadFinance(selectedBranch);
     } catch (err) {
       toast.error(err.message || 'Failed to add finance record');
     } finally {
@@ -65,7 +80,7 @@ export default function FinancePage() {
       const res = await fetch(`/api/finance?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('Record deleted');
-        loadFinance();
+        loadFinance(selectedBranch);
       } else {
         toast.error('Failed to delete');
       }
@@ -79,15 +94,53 @@ export default function FinancePage() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold">Financial Ledger & Budget Management</h1>
-          <p className="text-xs text-slate-400 mt-1">Track event budgets, sponsorship income, and operational expenses.</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Building2 className="w-6 h-6 text-logo-teal" /> Branch-Wise Financial Ledger & Budget
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">Monitor branch budgets, sponsorship income, and department expenses.</p>
         </div>
         <button
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-logo-navy to-logo-teal text-white rounded-xl text-xs font-bold shadow-md hover:opacity-90 transition"
         >
-          <Plus className="w-4 h-4" /> Add Financial Entry
+          <Plus className="w-4 h-4" /> Add Branch Entry
         </button>
+      </div>
+
+      {/* Branch Selector Toolbar */}
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+          <Filter className="w-4 h-4 text-logo-teal" /> Filter By Branch:
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setSelectedBranch('')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+              selectedBranch === '' ? 'bg-logo-navy text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            All Branches
+          </button>
+          {departments.map(d => (
+            <button
+              key={d.id}
+              onClick={() => setSelectedBranch(d.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+                selectedBranch === d.id ? 'bg-logo-teal text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+              }`}
+            >
+              {d.code}
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedBranch('CENTRAL')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+              selectedBranch === 'CENTRAL' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+            }`}
+          >
+            Central NSS
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -127,22 +180,72 @@ export default function FinancePage() {
         </div>
       </div>
 
+      {/* Branch Breakdown Cards */}
+      {branchSummaries.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">Branch Financial Breakdown</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {branchSummaries.map((bs) => (
+              <div
+                key={bs.id}
+                onClick={() => setSelectedBranch(bs.id === 'CENTRAL' ? 'CENTRAL' : bs.id)}
+                className={`p-4 rounded-2xl border cursor-pointer transition ${
+                  selectedBranch === (bs.id === 'CENTRAL' ? 'CENTRAL' : bs.id)
+                    ? 'border-logo-teal ring-2 ring-logo-teal/20 bg-logo-teal/5 dark:bg-slate-800'
+                    : 'border-slate-200/60 dark:border-slate-700/60 bg-white dark:bg-slate-800 hover:border-logo-teal/40'
+                }`}
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white">{bs.code}</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">
+                    {bs.recordCount} logs
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 truncate mb-3">{bs.name}</p>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Budget:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">₹{bs.totalBudget.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Expense:</span>
+                    <span className="font-bold text-rose-500">-₹{bs.totalExpense.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1 font-bold">
+                    <span>Balance:</span>
+                    <span className={bs.balance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}>
+                      ₹{bs.balance.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-md overflow-hidden">
-        <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50">
+        <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center">
           <h3 className="text-lg font-bold">Financial Records History</h3>
+          {selectedBranch && (
+            <span className="text-xs font-bold text-logo-teal bg-logo-teal/10 px-3 py-1 rounded-full">
+              Filtered by: {departments.find(d => d.id === selectedBranch)?.code || selectedBranch}
+            </span>
+          )}
         </div>
 
         {loading ? (
           <div className="p-12 text-center text-slate-400">Loading financial ledger...</div>
         ) : records.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">No financial records logged yet.</div>
+          <div className="p-12 text-center text-slate-400">No financial records logged yet for this selection.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 uppercase text-[11px] font-bold tracking-wider">
                   <th className="py-4 px-6">Entry Title</th>
+                  <th className="py-4 px-6">Branch</th>
                   <th className="py-4 px-6">Category</th>
                   <th className="py-4 px-6">Type</th>
                   <th className="py-4 px-6">Amount</th>
@@ -156,6 +259,11 @@ export default function FinancePage() {
                     <td className="py-4 px-6">
                       <p className="font-bold">{rec.title}</p>
                       {rec.description && <p className="text-xs text-slate-400">{rec.description}</p>}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="px-2.5 py-1 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold border border-indigo-200 dark:border-indigo-800">
+                        {rec.department?.code || 'Central NSS'}
+                      </span>
                     </td>
                     <td className="py-4 px-6">
                       <span className="px-2.5 py-1 rounded bg-slate-100 dark:bg-slate-700 text-xs font-bold">
@@ -199,7 +307,7 @@ export default function FinancePage() {
       {modalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700">
-            <h3 className="text-xl font-bold mb-4">Add Financial Entry</h3>
+            <h3 className="text-xl font-bold mb-4">Add Branch Financial Entry</h3>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Title</label>
@@ -211,6 +319,22 @@ export default function FinancePage() {
                   onChange={e => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-logo-teal"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Assigned Branch / Department</label>
+                <select
+                  value={departmentId}
+                  onChange={e => setDepartmentId(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-logo-teal"
+                >
+                  <option value="">Central NSS / General</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} ({d.code})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
