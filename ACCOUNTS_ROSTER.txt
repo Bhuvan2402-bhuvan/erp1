@@ -1,0 +1,55 @@
+===================================================================
+                  VVITU NSS ERP - ACCOUNTS ROSTER
+===================================================================
+
+[ADMINISTRATOR ACCOUNTS]
+1. Email: admin1@erp.com   | Password: AdminPass1!   | Role: Admin Lead 1
+2. Email: admin2@erp.com   | Password: AdminPass2!   | Role: Admin Lead 2
+3. Email: admin3@erp.com   | Password: AdminPass3!   | Role: Admin Lead 3
+4. Email: admin4@erp.com   | Password: AdminPass4!   | Role: Admin Lead 4
+
+[FACULTY COORDINATOR ACCOUNTS]
+1. Email: faculty1@erp.com  | Password: FacultyPass1!  | Role: Faculty Coordinator 1
+2. Email: faculty2@erp.com  | Password: FacultyPass2!  | Role: Faculty Coordinator 2
+3. Email: faculty3@erp.com  | Password: FacultyPass3!  | Role: Faculty Coordinator 3
+4. Email: faculty4@erp.com  | Password: FacultyPass4!  | Role: Faculty Coordinator 4
+5. Email: faculty5@erp.com  | Password: FacultyPass5!  | Role: Faculty Coordinator 5
+6. Email: faculty6@erp.com  | Password: FacultyPass6!  | Role: Faculty Coordinator 6
+7. Email: faculty7@erp.com  | Password: FacultyPass7!  | Role: Faculty Coordinator 7
+8. Email: faculty8@erp.com  | Password: FacultyPass8!  | Role: Faculty Coordinator 8
+9. Email: faculty9@erp.com  | Password: FacultyPass9!  | Role: Faculty Coordinator 9
+10. Email: faculty10@erp.com | Password: FacultyPass10! | Role: Faculty Coordinator 10
+11. Email: faculty11@erp.com | Password: FacultyPass11! | Role: Faculty Coordinator 11
+12. Email: faculty12@erp.com | Password: FacultyPass12! | Role: Faculty Coordinator 12
+13. Email: faculty13@erp.com | Password: FacultyPass13! | Role: Faculty Coordinator 13
+14. Email: faculty14@erp.com | Password: FacultyPass14! | Role: Faculty Coordinator 14
+15. Email: faculty15@erp.com | Password: FacultyPass15! | Role: Faculty Coordinator 15
+
+[STUDENT COORDINATOR ACCOUNTS]
+1. Email: coord1@erp.com   | Password: CoordPass1!   | Role: Student Coordinator 1
+2. Email: coord2@erp.com   | Password: CoordPass2!   | Role: Student Coordinator 2
+3. Email: coord3@erp.com   | Password: CoordPass3!   | Role: Student Coordinator 3
+4. Email: coord4@erp.com   | Password: CoordPass4!   | Role: Student Coordinator 4
+5. Email: coord5@erp.com   | Password: CoordPass5!   | Role: Student Coordinator 5
+6. Email: coord6@erp.com   | Password: CoordPass6!   | Role: Student Coordinator 6
+7. Email: coord7@erp.com   | Password: CoordPass7!   | Role: Student Coordinator 7
+8. Email: coord8@erp.com   | Password: CoordPass8!   | Role: Student Coordinator 8
+9. Email: coord9@erp.com   | Password: CoordPass9!   | Role: Student Coordinator 9
+10. Email: coord10@erp.com  | Password: CoordPass10!  | Role: Student Coordinator 10
+11. Email: coord11@erp.com  | Password: CoordPass11!  | Role: Student Coordinator 11
+12. Email: coord12@erp.com  | Password: CoordPass12!  | Role: Student Coordinator 12
+13. Email: coord13@erp.com  | Password: CoordPass13!  | Role: Student Coordinator 13
+14. Email: coord14@erp.com  | Password: CoordPass14!  | Role: Student Coordinator 14
+15. Email: coord15@erp.com  | Password: CoordPass15!  | Role: Student Coordinator 15
+16. Email: coord16@erp.com  | Password: CoordPass16!  | Role: Student Coordinator 16
+17. Email: coord17@erp.com  | Password: CoordPass17!  | Role: Student Coordinator 17
+18. Email: coord18@erp.com  | Password: CoordPass18!  | Role: Student Coordinator 18
+19. Email: coord19@erp.com  | Password: CoordPass19!  | Role: Student Coordinator 19
+20. Email: coord20@erp.com  | Password: CoordPass20!  | Role: Student Coordinator 20
+
+[VOLUNTEER STUDENT ACCOUNTS]
+1. Email: volunteer1@erp.com | Password: VolunteerPass1! | Role: Student Volunteer 1
+2. Email: volunteer2@erp.com | Password: VolunteerPass2! | Role: Student Volunteer 2
+3. Email: volunteer3@erp.com | Password: VolunteerPass3! | Role: Student Volunteer 3
+4. Email: volunteer4@erp.com | Password: VolunteerPass4! | Role: Student Volunteer 4
+5. Email: volunteer5@erp.com | Password: VolunteerPass5! | Role: Student Volunteer 5

@@ -2,16 +2,28 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, Award, ShieldCheck, Search, Filter, ArrowLeft, BookOpen, Sparkles } from 'lucide-react';
+import {
+  Grid, Calendar, Award, ArrowLeft, Camera, Search, Filter,
+  MapPin, Eye, X, Star, Heart, MessageCircle, Bookmark, Share2, Shield, UserCheck, Sparkles
+} from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 export default function VisitorPage() {
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'events' | 'faculty'
+  
   const [stats, setStats] = useState({ totalVolunteers: 0, totalCoordinators: 0, totalFaculty: 0, totalEvents: 0 });
   const [departments, setDepartments] = useState([]);
-  const [volunteers, setVolunteers] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [facultyDesk, setFacultyDesk] = useState([]);
+
+  // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
+  
+  // Lightbox Modal
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   useEffect(() => {
     fetch('/api/visitor')
@@ -19,24 +31,34 @@ export default function VisitorPage() {
       .then(data => {
         if (data.stats) setStats(data.stats);
         if (data.departments) setDepartments(data.departments);
-        if (data.volunteers) setVolunteers(data.volunteers);
+        if (data.photos) setPhotos(data.photos);
+        if (data.events) setEvents(data.events);
+        if (data.facultyDesk) setFacultyDesk(data.facultyDesk);
       })
       .catch(err => console.error('Failed to load visitor data:', err))
       .finally(() => setLoading(false));
   }, []);
 
-  const filteredVolunteers = volunteers.filter(v => {
-    const matchesSearch = v.name.toLowerCase().includes(searchTerm.toLowerCase()) || v.rollNo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDept = !selectedDept || v.departmentCode === selectedDept || v.department === selectedDept;
+  // Filtered Photo Feed
+  const filteredPhotos = photos.filter(p => {
+    const matchesSearch = (p.caption || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (p.eventTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (p.eventLocation || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = !selectedDept || p.departmentCode === selectedDept || p.departmentName === selectedDept;
     return matchesSearch && matchesDept;
   });
 
-  const getTierBadge = (points = 0) => {
-    if (points >= 300) return { label: 'Platinum', bg: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/30' };
-    if (points >= 150) return { label: 'Gold', bg: 'bg-amber-500/10 text-amber-500 border-amber-500/30' };
-    if (points >= 50) return { label: 'Silver', bg: 'bg-slate-400/10 text-slate-400 border-slate-400/30' };
-    return { label: 'Bronze', bg: 'bg-amber-700/10 text-amber-700 border-amber-700/30' };
-  };
+  // Filtered Events
+  const filteredEvents = events.filter(e => {
+    const matchesSearch = e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (e.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (e.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDept = !selectedDept || e.departmentCode === selectedDept || e.departmentName === selectedDept;
+    return matchesSearch && matchesDept;
+  });
+
+  const pcProfile = facultyDesk.find(f => f.role === 'NSS_PC');
+  const poProfiles = facultyDesk.filter(f => f.role !== 'NSS_PC');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans relative overflow-x-hidden">
@@ -45,7 +67,7 @@ export default function VisitorPage() {
 
       {/* Visitor Header */}
       <header className="border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-white transition">
               <ArrowLeft className="w-5 h-5" />
@@ -72,159 +94,433 @@ export default function VisitorPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 relative z-10 w-full">
-        {/* Banner */}
-        <div className="bg-gradient-to-r from-logo-navy via-slate-900 to-logo-teal text-white p-8 rounded-3xl shadow-xl mb-10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -z-0" />
-          <div className="relative z-10 max-w-2xl">
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">Verified Volunteer Registry</h1>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              Public directory verifying active student volunteers, department allocations, and accrued social impact service points.
-            </p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 relative z-10 w-full space-y-8">
+        
+        {/* Instagram Profile Style Header Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-slate-700/80 shadow-md">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 lg:gap-10">
+            {/* NSS Emblem Avatar */}
+            <div className="relative group shrink-0">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-logo-teal to-logo-navy shadow-lg">
+                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-2 flex items-center justify-center">
+                  <Image src="/nss-logo.png" alt="NSS Unit" width={100} height={100} className="w-full h-full object-contain" priority />
+                </div>
+              </div>
+            </div>
+
+            {/* Profile Info */}
+            <div className="flex-1 text-center md:text-left space-y-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">vvit_nss_official</h1>
+                  <span className="w-5 h-5 rounded-full bg-logo-teal text-white flex items-center justify-center text-[10px] font-bold" title="Verified ERP Unit">✓</span>
+                </div>
+                <Link
+                  href="/login"
+                  className="px-5 py-2 text-xs font-extrabold rounded-xl bg-gradient-to-r from-logo-navy to-logo-teal text-white hover:opacity-90 transition shadow-sm"
+                >
+                  Volunteer Login
+                </Link>
+              </div>
+
+              {/* Stats Bar */}
+              <div className="flex justify-center md:justify-start gap-8 py-2 border-y border-slate-100 dark:border-slate-700/60 text-sm">
+                <div>
+                  <span className="font-extrabold text-slate-900 dark:text-white">{photos.length}</span>{' '}
+                  <span className="text-slate-500 text-xs">posts</span>
+                </div>
+                <div>
+                  <span className="font-extrabold text-slate-900 dark:text-white">{stats.totalEvents}</span>{' '}
+                  <span className="text-slate-500 text-xs">campaigns</span>
+                </div>
+                <div>
+                  <span className="font-extrabold text-slate-900 dark:text-white">{stats.totalVolunteers}</span>{' '}
+                  <span className="text-slate-500 text-xs">volunteers</span>
+                </div>
+                <div>
+                  <span className="font-extrabold text-slate-900 dark:text-white">{stats.totalFaculty}</span>{' '}
+                  <span className="text-slate-500 text-xs">faculty officers</span>
+                </div>
+              </div>
+
+              {/* Bio / Description */}
+              <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                <p className="font-bold text-slate-900 dark:text-white">VVIT NSS ERP Unit &bull; &ldquo;Not Me, But You&rdquo;</p>
+                <p className="text-slate-500">Official gallery & activity showcase of VVIT National Service Scheme campaigns, blood drives, rallies, and social service initiatives across all academic branches.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Tabs (Instagram style) */}
+          <div className="flex justify-center border-t border-slate-200 dark:border-slate-700 mt-8 pt-2">
+            <div className="flex gap-8 sm:gap-16 text-xs sm:text-sm font-bold uppercase tracking-wider">
+              <button
+                onClick={() => setActiveTab('feed')}
+                className={`flex items-center gap-2 py-3 border-b-2 transition ${
+                  activeTab === 'feed'
+                    ? 'border-logo-teal text-logo-teal'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                }`}
+              >
+                <Grid className="w-4 h-4" /> Posts Feed
+              </button>
+
+              <button
+                onClick={() => setActiveTab('events')}
+                className={`flex items-center gap-2 py-3 border-b-2 transition ${
+                  activeTab === 'events'
+                    ? 'border-logo-teal text-logo-teal'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                }`}
+              >
+                <Calendar className="w-4 h-4" /> Drives & Camps ({events.length})
+              </button>
+
+              <button
+                onClick={() => setActiveTab('faculty')}
+                className={`flex items-center gap-2 py-3 border-b-2 transition ${
+                  activeTab === 'faculty'
+                    ? 'border-logo-teal text-logo-teal'
+                    : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                }`}
+              >
+                <Award className="w-4 h-4" /> NSS Desk ({facultyDesk.length})
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-logo-teal/10 text-logo-teal flex items-center justify-center shrink-0">
-              <Users className="w-6 h-6" />
+        {/* Filter bar for Feed & Events */}
+        {(activeTab === 'feed' || activeTab === 'events') && (
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder={activeTab === 'feed' ? "Search activity photos or locations..." : "Search event titles or descriptions..."}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-logo-teal"
+              />
             </div>
-            <div>
-              <p className="text-2xl font-black">{stats.totalVolunteers}</p>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Volunteers</p>
+
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <select
+                value={selectedDept}
+                onChange={e => setSelectedDept(e.target.value)}
+                className="w-full md:w-56 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-logo-teal"
+              >
+                <option value="">All Academic Departments</option>
+                {departments.map(d => (
+                  <option key={d.id} value={d.code}>{d.name} ({d.code})</option>
+                ))}
+              </select>
             </div>
           </div>
+        )}
 
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-logo-navy/10 dark:bg-logo-navy/30 text-logo-navy dark:text-logo-teal flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-black">{stats.totalCoordinators}</p>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student Coordinators</p>
-            </div>
+        {/* ── TAB 1: INSTAGRAM PHOTO FEED GRID ── */}
+        {activeTab === 'feed' && (
+          <div>
+            {loading ? (
+              <div className="p-16 text-center text-slate-400 text-sm">Loading activity feed...</div>
+            ) : filteredPhotos.length === 0 ? (
+              <div className="p-16 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                <Camera className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="font-bold text-slate-600 dark:text-slate-300">No activity photos found</p>
+                <p className="text-xs text-slate-400 mt-1">Check back later for campaign photo updates from coordinators and faculty.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredPhotos.map(photo => (
+                  <div
+                    key={photo.id}
+                    onClick={() => setSelectedPhoto(photo)}
+                    className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group cursor-pointer flex flex-col"
+                  >
+                    {/* Header bar of post */}
+                    <div className="p-3.5 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                          {photo.departmentCode ? photo.departmentCode[0] : 'N'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">{photo.eventTitle || 'NSS Campaign'}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{photo.departmentName}</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-md bg-logo-teal/10 text-logo-teal text-[10px] font-extrabold uppercase shrink-0">
+                        {photo.departmentCode || 'NSS'}
+                      </span>
+                    </div>
+
+                    {/* Image Container (Aspect Square) */}
+                    <div className="relative aspect-square bg-slate-900 overflow-hidden">
+                      <img
+                        src={photo.url}
+                        alt={photo.caption || photo.eventTitle}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* Hover Overlay */}
+                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white font-bold text-sm">
+                        <span className="flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-full backdrop-blur-xs">
+                          <Eye className="w-4 h-4 text-logo-teal" /> View Details
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer / Caption */}
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                      <div className="flex items-center justify-between text-slate-400">
+                        <div className="flex items-center gap-3">
+                          <Heart className="w-4 h-4 hover:text-rose-500 transition" />
+                          <MessageCircle className="w-4 h-4 hover:text-logo-teal transition" />
+                          <Share2 className="w-4 h-4 hover:text-logo-teal transition" />
+                        </div>
+                        <Bookmark className="w-4 h-4 hover:text-amber-500 transition" />
+                      </div>
+
+                      <div>
+                        {photo.caption && (
+                          <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                            <span className="font-bold mr-1 text-slate-900 dark:text-white">{photo.eventTitle}:</span>
+                            {photo.caption}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Posted by {photo.uploadedBy || 'NSS Coordinator'} &bull; {new Date(photo.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+        )}
 
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-logo-green/10 text-logo-green flex items-center justify-center shrink-0">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-black">{stats.totalFaculty}</p>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Faculty Officers</p>
-            </div>
-          </div>
+        {/* ── TAB 2: CAMPAIGN EVENTS CARD GRID ── */}
+        {activeTab === 'events' && (
+          <div>
+            {loading ? (
+              <div className="p-16 text-center text-slate-400 text-sm">Loading campaigns...</div>
+            ) : filteredEvents.length === 0 ? (
+              <div className="p-16 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="font-bold text-slate-600 dark:text-slate-300">No campaigns found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map(evt => {
+                  const evtDate = new Date(evt.date);
+                  const month = evtDate.toLocaleString('default', { month: 'short' });
+                  const day = evtDate.getDate();
+                  const year = evtDate.getFullYear();
 
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-              <Award className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-2xl font-black">{stats.totalEvents}</p>
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Drives & Camps</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-96">
-            <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by volunteer name or roll number..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-logo-teal"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <select
-              value={selectedDept}
-              onChange={e => setSelectedDept(e.target.value)}
-              className="w-full md:w-56 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-logo-teal"
-            >
-              <option value="">All Academic Departments</option>
-              {departments.map(d => (
-                <option key={d.id} value={d.code}>{d.name} ({d.code})</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Volunteer Table */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-md overflow-hidden">
-          <div className="p-6 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center">
-            <h3 className="text-lg font-bold">Volunteer Roster ({filteredVolunteers.length})</h3>
-            <span className="text-xs text-slate-400 font-medium">Public Verified Directory</span>
-          </div>
-
-          {loading ? (
-            <div className="p-12 text-center text-slate-400">Loading directory...</div>
-          ) : filteredVolunteers.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">No matching volunteers found.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-slate-500 uppercase text-[11px] font-bold tracking-wider">
-                    <th className="py-4 px-6">Volunteer Name</th>
-                    <th className="py-4 px-6">Department</th>
-                    <th className="py-4 px-6">Roll No</th>
-                    <th className="py-4 px-6">Year / Sec</th>
-                    <th className="py-4 px-6">Role</th>
-                    <th className="py-4 px-6 text-right">Points / Badge</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                  {filteredVolunteers.map(v => {
-                    const tier = getTierBadge(v.points);
-                    return (
-                      <tr key={v.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition">
-                        <td className="py-4 px-6 font-bold flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                            {v.name ? v.name[0].toUpperCase() : 'V'}
+                  return (
+                    <div key={evt.id} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm hover:shadow-lg transition flex flex-col justify-between space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="bg-logo-teal/10 dark:bg-logo-teal/20 border border-logo-teal/20 rounded-2xl px-3 py-2 text-center shrink-0">
+                            <p className="text-[10px] font-black text-logo-teal uppercase leading-none">{month}</p>
+                            <p className="text-lg font-black text-slate-900 dark:text-white leading-tight">{day}</p>
+                            <p className="text-[9px] text-slate-400">{year}</p>
                           </div>
-                          <span>{v.name}</span>
-                        </td>
-                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                          <span className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-xs font-bold">
-                            {v.departmentCode || v.department}
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                              {evt.type}
+                            </span>
+                            <span className="text-[10px] font-bold text-logo-teal">
+                              {evt.departmentCode}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="font-bold text-slate-900 dark:text-white text-base leading-snug">{evt.title}</h3>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">{evt.description || 'No description provided.'}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" /> {evt.location || 'Campus'}
+                        </span>
+                        <span className="font-bold text-logo-navy dark:text-logo-teal">
+                          {evt.registrationsCount} Registered
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB 3: NSS FACULTY DESK (PO's & PC) ── */}
+        {activeTab === 'faculty' && (
+          <div className="space-y-8">
+
+            {/* Main NSS Program Coordinator (PC) Desk */}
+            {pcProfile && (
+              <div className="bg-gradient-to-br from-logo-navy via-slate-900 to-logo-teal text-white rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
+                  {/* Photo */}
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl bg-white/10 border-2 border-white/20 overflow-hidden shrink-0 shadow-lg flex items-center justify-center text-3xl font-black">
+                    {pcProfile.photoUrl ? (
+                      <img src={pcProfile.photoUrl} alt={pcProfile.name} className="w-full h-full object-cover" />
+                    ) : (
+                      pcProfile.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                    )}
+                  </div>
+
+                  {/* Details & Foreword */}
+                  <div className="flex-1 space-y-4 text-center md:text-left">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-extrabold uppercase mb-2">
+                        <Star className="w-3.5 h-3.5 fill-current text-amber-400" /> Program Coordinator (PC) Desk
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-black text-white">{pcProfile.name}</h2>
+                      <p className="text-sm text-slate-300 font-medium">{pcProfile.designation} &bull; {pcProfile.branch}</p>
+                    </div>
+
+                    <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/10">
+                      <p className="text-xs uppercase font-extrabold text-amber-300 tracking-wider mb-2">Foreword & Message</p>
+                      <p className="text-sm italic text-slate-200 leading-relaxed">&ldquo;{pcProfile.foreword}&rdquo;</p>
+                    </div>
+
+                    {Array.isArray(pcProfile.achievements) && pcProfile.achievements.length > 0 && (
+                      <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-1">
+                        {pcProfile.achievements.map((ach, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white/15 text-xs font-bold text-white border border-white/20">
+                            <Award className="w-3.5 h-3.5 text-amber-400" /> {ach}
                           </span>
-                        </td>
-                        <td className="py-4 px-6 text-slate-500 font-mono text-xs">{v.rollNo}</td>
-                        <td className="py-4 px-6 text-slate-500 text-xs">Year {v.year} • Sec {v.section}</td>
-                        <td className="py-4 px-6">
-                          {v.isCoordinator ? (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700">
-                              Coordinator
-                            </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* NSS Program Officers (POs) Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-logo-teal" /> NSS Program Officers (PO&apos;s) Desk
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Faculty Program Officers guiding NSS units across academic branches.</p>
+                </div>
+              </div>
+
+              {poProfiles.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                  <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="font-bold">No Program Officer profiles published yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {poProfiles.map(po => (
+                    <div key={po.id} className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden shadow-sm">
+                          {po.photoUrl ? (
+                            <img src={po.photoUrl} alt={po.name} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                              Volunteer
-                            </span>
+                            po.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
                           )}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            <span className="font-extrabold text-logo-teal text-sm">{v.points} pts</span>
-                            <span className={`px-2.5 py-0.5 rounded border text-[10px] font-bold uppercase ${tier.bg}`}>
-                              {tier.label}
+                        </div>
+                        <div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-logo-teal/10 text-logo-teal border border-logo-teal/20">
+                            NSS PO
+                          </span>
+                          <h4 className="font-bold text-slate-900 dark:text-white text-base mt-1">{po.name}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{po.designation}</p>
+                          <p className="text-xs font-bold text-logo-navy dark:text-logo-teal mt-0.5">{po.branch}</p>
+                        </div>
+                      </div>
+
+                      {/* Foreword quote */}
+                      <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/60">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed">&ldquo;{po.foreword}&rdquo;</p>
+                      </div>
+
+                      {/* Achievements */}
+                      {Array.isArray(po.achievements) && po.achievements.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {po.achievements.map((ach, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 rounded-lg text-[11px]">
+                              <Award className="w-3 h-3 text-amber-500" /> {ach}
                             </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
+
+      {/* Lightbox Modal for Photo Posts */}
+      {selectedPhoto && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setSelectedPhoto(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()}>
+            {/* Left: Image */}
+            <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+              <img src={selectedPhoto.url} alt={selectedPhoto.caption || selectedPhoto.eventTitle} className="max-h-[70vh] md:max-h-[85vh] w-auto object-contain" />
+            </div>
+
+            {/* Right: Info & Comments */}
+            <div className="w-full md:w-80 p-6 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {selectedPhoto.departmentCode ? selectedPhoto.departmentCode[0] : 'N'}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold truncate">{selectedPhoto.eventTitle}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{selectedPhoto.departmentName}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedPhoto(null)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{selectedPhoto.caption || 'No caption provided.'}</p>
+                </div>
+
+                <div className="space-y-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-logo-teal" />
+                    <span>{new Date(selectedPhoto.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                  {selectedPhoto.eventLocation && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{selectedPhoto.eventLocation}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <span>Posted by {selectedPhoto.uploadedBy || 'NSS Unit'}</span>
+                <span className="px-2 py-0.5 rounded bg-logo-teal/10 text-logo-teal font-extrabold text-[10px]">{selectedPhoto.departmentCode || 'NSS'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-200/60 dark:border-slate-800/60 py-6 text-center text-xs text-slate-400">

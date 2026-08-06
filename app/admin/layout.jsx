@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import {
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
-  GraduationCap, BookOpen, UserCircle
+  GraduationCap, BookOpen, UserCircle, Quote, Activity, Award
 } from 'lucide-react';
+
 
 export const metadata = { title: 'Admin Dashboard | VVITU NSS ERP' };
 
@@ -26,6 +27,7 @@ export default async function AdminLayout({ children }) {
     { id: 'approvals', name: 'Approvals', href: '/admin/approvals', basePath: '/admin/approvals', icon: 'UserCheck' },
     { id: 'volunteers', name: 'Volunteers', href: '/admin/volunteers', basePath: '/admin/volunteers', icon: 'Users' },
     { id: 'faculty', name: 'Faculty', href: '/admin/faculty', basePath: '/admin/faculty', icon: 'GraduationCap' },
+    { id: 'faculty-desk', name: 'Faculty Desk', href: '/admin/faculty-desk', basePath: '/admin/faculty-desk', icon: 'Award' },
     { id: 'events', name: 'Events', href: '/admin/events', basePath: '/admin/events', icon: 'Calendar' },
     { id: 'attendance', name: 'Attendance', href: '/admin/attendance', basePath: '/admin/attendance', icon: 'ClipboardList' },
     { id: 'finance', name: 'Finance', href: '/admin/finance', basePath: '/admin/finance', icon: 'Award' },
@@ -34,6 +36,8 @@ export default async function AdminLayout({ children }) {
     { id: 'issues', name: 'Issues & Complaints', href: '/admin/issues', basePath: '/admin/issues', icon: 'AlertTriangle' },
     { id: 'chat', name: 'Chat', href: '/admin/chat', basePath: '/admin/chat', icon: 'MessageSquare' },
     { id: 'announcements', name: 'Announcements', href: '/admin/announcements', basePath: '/admin/announcements', icon: 'Megaphone' },
+    { id: 'testimonials', name: 'Testimonials', href: '/admin/testimonials', basePath: '/admin/testimonials', icon: 'Quote' },
+    { id: 'campaign-widget', name: 'Campaign Widget', href: '/admin/campaign-widget', basePath: '/admin/campaign-widget', icon: 'Activity' },
     { id: 'branches', name: 'Branches', href: '/admin/branches', basePath: '/admin/branches', icon: 'BookOpen' },
     { id: 'profile', name: 'Profile', href: '/admin/profile', basePath: '/admin/profile', icon: 'UserCircle' },
   ];

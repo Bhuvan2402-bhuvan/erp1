@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef } from 'react';
 import Image from 'next/image';
+import EventGallery from '@/components/EventGallery';
 import {
   User, Mail, Phone, BookOpen, Building2, Hash,
   Edit3, Save, X, Star, ShieldCheck, GraduationCap,
@@ -600,6 +601,11 @@ export default function ProfileTab({ user, onUpdate }) {
           {/* Change Password Card */}
           <PasswordChangeCard onToast={showToast} />
         </div>
+      </div>
+
+      {/* Multi-Branch Event Photo & Activity Gallery */}
+      <div className="mt-8">
+        <EventGallery />
       </div>
     </div>
   );

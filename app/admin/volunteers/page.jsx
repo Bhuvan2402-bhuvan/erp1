@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Star, Check, Key, ShieldAlert, X } from 'lucide-react';
+import { Download, Star, Check, Key, ShieldAlert, X, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminVolunteers() {
   const [students, setStudents] = useState([]);
   const [faculty, setFaculty] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [studentsPage, setStudentsPage] = useState(1);
   const [studentsTotalPages, setStudentsTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,16 @@ export default function AdminVolunteers() {
       const res = await fetch('/api/faculty');
       const data = await res.json();
       setFaculty(data.faculty || []);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/departments');
+      const data = await res.json();
+      setDepartments(data.departments || []);
     } catch (e) {
       console.error(e);
     }
@@ -36,8 +47,9 @@ export default function AdminVolunteers() {
 
   useEffect(() => {
     fetchFaculty();
+    fetchDepartments();
     fetchStudents(1);
-  }, [fetchFaculty, fetchStudents]);
+  }, [fetchFaculty, fetchDepartments, fetchStudents]);
 
   const handleUpdateUser = async (userId, updateData) => {
     const res = await fetch(`/api/users/${userId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
@@ -46,6 +58,18 @@ export default function AdminVolunteers() {
       fetchStudents(studentsPage);
     } else {
       toast.error('Failed to update');
+    }
+  };
+
+  const handleDeleteVolunteer = async (userId, name) => {
+    if (!confirm(`Permanently delete "${name}"?\n\nThis will remove all their data including attendance, issues and certificates. This action cannot be undone.`)) return;
+    const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      toast.success(`${name} deleted successfully`);
+      fetchStudents(studentsPage);
+    } else {
+      toast.error(data.message || 'Failed to delete volunteer');
     }
   };
 
@@ -91,7 +115,25 @@ export default function AdminVolunteers() {
                   </div>
                   <div className="text-xs text-slate-500">{s.rollNo} • {s.user?.email}</div>
                 </td>
-                <td className="p-4 text-sm">{s.department?.name}</td>
+                <td className="p-4 text-sm">
+                  {s.isCoordinator ? (
+                    <select
+                      className="border rounded p-1 text-xs dark:bg-slate-700 dark:border-slate-600 max-w-[160px]"
+                      value={s.departmentId || ''}
+                      title="Change branch (coordinators only)"
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        handleUpdateUser(s.userId, { departmentId: e.target.value });
+                      }}
+                    >
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span>{s.department?.name}</span>
+                  )}
+                </td>
                 <td className="p-4 text-sm">
                   <select className="border rounded p-1 text-xs dark:bg-slate-700 dark:border-slate-600" value={s.mentorId || ''} onChange={(e) => handleUpdateUser(s.userId, { mentorId: e.target.value || 'null' })}>
                     <option value="">Unassigned</option>
@@ -111,6 +153,7 @@ export default function AdminVolunteers() {
                   <button onClick={() => handleUpdateUser(s.userId, { isCoordinator: !s.isCoordinator })} className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200" title="Toggle Coordinator"><Star className="w-4 h-4" /></button>
                   <button onClick={() => handleResetPassword(s.userId)} className="p-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200" title="Reset Password"><Key className="w-4 h-4" /></button>
                   <button onClick={() => handleUpdateUser(s.userId, { isBlocked: !s.user?.isBlocked })} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Block/Unblock"><ShieldAlert className="w-4 h-4" /></button>
+                  <button onClick={() => handleDeleteVolunteer(s.userId, s.user?.name)} className="p-1.5 bg-red-600 text-white rounded hover:bg-red-700" title="Delete Volunteer"><Trash2 className="w-4 h-4" /></button>
                 </td>
               </tr>
             ))}

@@ -40,3 +40,28 @@ export const POST = withAuth(async (req, { params, user }) => {
     return sanitizeErrorResponse(error, 'Error uploading photo');
   }
 });
+
+// DELETE /api/events/[id]/photos?photoId=... — Delete photo
+export const DELETE = withAuth(async (req, { params, user }) => {
+  try {
+    const { dbUser } = user;
+    const { searchParams } = new URL(req.url);
+    const photoId = searchParams.get('photoId');
+    if (!photoId) return NextResponse.json({ message: 'photoId query parameter is required' }, { status: 400 });
+
+    const photo = await prisma.eventPhoto.findUnique({ where: { id: photoId } });
+    if (!photo) return NextResponse.json({ message: 'Photo not found' }, { status: 404 });
+
+    const isUploader = photo.uploadedById === dbUser.id;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || dbUser.student?.isCoordinator;
+    if (!isUploader && !isManager) {
+      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+
+    await prisma.eventPhoto.delete({ where: { id: photoId } });
+    return NextResponse.json({ message: 'Photo deleted successfully' }, { status: 200 });
+  } catch (error) {
+    return sanitizeErrorResponse(error, 'Error deleting photo');
+  }
+});
+

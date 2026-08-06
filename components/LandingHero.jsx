@@ -1,11 +1,59 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowRight, Users, Zap, Award } from 'lucide-react';
+import {
+  ArrowRight, Zap, Users, Award, Activity, Star, Bell,
+  CheckCircle, AlertCircle, Heart, BookOpen, Calendar
+} from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/client-provider';
+
+const ICON_MAP = {
+  zap: Zap, users: Users, award: Award, activity: Activity,
+  star: Star, bell: Bell, check: CheckCircle, alert: AlertCircle,
+  heart: Heart, book: BookOpen, calendar: Calendar,
+};
+const ICON_COLORS = [
+  'bg-logo-green/10 dark:bg-logo-green/20 text-logo-green',
+  'bg-logo-teal/10 dark:bg-logo-teal/20 text-logo-teal',
+  'bg-amber-100 dark:bg-amber-900/30 text-amber-600',
+  'bg-purple-100 dark:bg-purple-900/30 text-purple-600',
+  'bg-rose-100 dark:bg-rose-900/30 text-rose-500',
+  'bg-blue-100 dark:bg-blue-900/30 text-blue-500',
+];
+
+const DEFAULT_ACTIVITIES = [
+  { title: 'Arun K. (Student) joined', subtitle: 'Registered for Plantation Drive • 2 mins ago', icon: 'users' },
+  { title: 'Hour Audits Completed', subtitle: 'Dr. Srinivasan approved 12 certificates • 1 hour ago', icon: 'award' },
+];
+
+const DEFAULT_WIDGET = {
+  campaignName: 'Blood Drive Registration',
+  currentCount: 124,
+  targetCount: 150,
+  activities: DEFAULT_ACTIVITIES,
+};
 
 export default function LandingHero({ stats }) {
   const { user, signOut } = useSupabase();
+  const [widget, setWidget] = useState(DEFAULT_WIDGET);
+
+  useEffect(() => {
+    fetch('/api/campaign-widget')
+      .then(r => r.json())
+      .then(data => {
+        if (data.widget) {
+          const acts = Array.isArray(data.widget.activities) && data.widget.activities.length > 0
+            ? data.widget.activities
+            : DEFAULT_ACTIVITIES;
+          setWidget({ ...DEFAULT_WIDGET, ...data.widget, activities: acts });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const widgetPct = widget.targetCount > 0
+    ? Math.min(100, Math.round((widget.currentCount / widget.targetCount) * 100))
+    : 0;
 
   const handleGoToDashboard = async () => {
     try {
@@ -94,28 +142,10 @@ export default function LandingHero({ stats }) {
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </a>
                 <a 
-                  href="/login?role=student" 
-                  className="px-5 py-3.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-sm font-bold rounded-full border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-[1.02] transition-all duration-300 text-center shadow-sm cursor-pointer relative z-30"
+                  href="/login" 
+                  className="px-6 py-3.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-sm font-bold rounded-full border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-[1.02] transition-all duration-300 text-center shadow-sm cursor-pointer relative z-30"
                 >
-                  🤝 Volunteer Login
-                </a>
-                <a 
-                  href="/login?role=coordinator" 
-                  className="px-5 py-3.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-sm font-bold rounded-full border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-[1.02] transition-all duration-300 text-center shadow-sm cursor-pointer relative z-30"
-                >
-                  ⭐ Coordinator Login
-                </a>
-                <a 
-                  href="/login?role=faculty" 
-                  className="px-5 py-3.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-sm font-bold rounded-full border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-[1.02] transition-all duration-300 text-center shadow-sm cursor-pointer relative z-30"
-                >
-                  🎓 Faculty Login
-                </a>
-                <a 
-                  href="/login?role=admin" 
-                  className="px-5 py-3.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-sm font-bold rounded-full border border-slate-200/80 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 hover:scale-[1.02] transition-all duration-300 text-center shadow-sm cursor-pointer relative z-30"
-                >
-                  👑 Admin Login
+                  🔑 Sign In
                 </a>
               </div>
             </div>
@@ -142,34 +172,30 @@ export default function LandingHero({ stats }) {
               <div className="space-y-4">
                 <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Blood Drive registration</span>
-                    <span className="text-xs font-extrabold text-logo-navy dark:text-logo-teal">124 / 150 Target</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{widget.campaignName}</span>
+                    <span className="text-xs font-extrabold text-logo-navy dark:text-logo-teal">{widget.currentCount} / {widget.targetCount} Target</span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-rose-500 to-red-500 h-full rounded-full w-[82.6%]" />
+                    <div className="bg-gradient-to-r from-rose-500 to-red-500 h-full rounded-full transition-all duration-500" style={{ width: `${widgetPct}%` }} />
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-xl transition">
-                    <div className="p-2 rounded-lg bg-logo-green/10 dark:bg-logo-green/20 text-logo-green shrink-0">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Arun K. (Student) joined</p>
-                      <p className="text-[10px] text-slate-500">Registered for Plantation Drive • 2 mins ago</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-xl transition">
-                    <div className="p-2 rounded-lg bg-logo-teal/10 dark:bg-logo-teal/20 text-logo-teal shrink-0">
-                      <Award className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Hour Audits Completed</p>
-                      <p className="text-[10px] text-slate-500">Dr. Srinivasan approved 12 certificates • 1 hour ago</p>
-                    </div>
-                  </div>
+                <div className="space-y-2">
+                  {(widget.activities || DEFAULT_ACTIVITIES).map((act, idx) => {
+                    const IconComp = ICON_MAP[act.icon] || Zap;
+                    const colorClass = ICON_COLORS[idx % ICON_COLORS.length];
+                    return (
+                      <div key={idx} className="flex items-start gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 rounded-xl transition">
+                        <div className={`p-2 rounded-lg ${colorClass} shrink-0`}>
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{act.title}</p>
+                          <p className="text-[10px] text-slate-500">{act.subtitle}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">

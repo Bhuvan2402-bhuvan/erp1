@@ -383,3 +383,56 @@ model WarningLog {
   @@index([studentId])
   @@map("warning_logs")
 }
+
+// ─── Landing Page Content ───────────────────────────────────
+
+model Testimonial {
+  id        String   @id @default(uuid())
+  name      String
+  role      String
+  dept      String
+  quote     String
+  avatar    String   // 2-letter initials, e.g. "BM"
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isVisible])
+  @@map("testimonials")
+}
+
+// ─── Hero Widget ────────────────────────────────────────────
+
+model CampaignWidget {
+  id            String   @id @default(uuid())
+  campaignName  String   @default("Blood Drive Registration")
+  currentCount  Int      @default(124)
+  targetCount   Int      @default(150)
+  activities    Json     @default("[]")
+  isActive      Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+
+  @@map("campaign_widget")
+}
+
+// ─── Faculty Desk ────────────────────────────────────────────
+
+model FacultyDesk {
+  id           String   @id @default(uuid())
+  name         String
+  role         String   @default("NSS_PO")  // "NSS_PC" | "NSS_PO"
+  designation  String
+  branch       String
+  foreword     String
+  achievements Json     @default("[]")       // String[]
+  photoUrl     String?
+  sortOrder    Int      @default(0)
+  isVisible    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([role])
+  @@index([isVisible])
+  @@map("faculty_desk")
+}

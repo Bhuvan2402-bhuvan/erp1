@@ -6,7 +6,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [totalVolunteers, totalCoordinators, totalFaculty, totalEvents, departmentStats, volunteers] = await Promise.all([
+    const [
+      totalVolunteers,
+      totalCoordinators,
+      totalFaculty,
+      totalEvents,
+      departmentStats,
+      recentPhotos,
+      events,
+      facultyProfiles
+    ] = await Promise.all([
       prisma.user.count({ where: { role: 'STUDENT', approvalStatus: 'APPROVED' } }),
       prisma.student.count({ where: { isCoordinator: true } }),
       prisma.user.count({ where: { role: 'FACULTY', approvalStatus: 'APPROVED' } }),
@@ -16,54 +25,96 @@ export async function GET() {
           id: true,
           name: true,
           code: true,
-          _count: {
-            select: { students: true }
+          _count: { select: { students: true } }
+        }
+      }),
+      prisma.eventPhoto.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 48,
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              date: true,
+              location: true,
+              type: true,
+              status: true,
+              createdBy: {
+                select: {
+                  department: { select: { name: true, code: true } }
+                }
+              }
+            }
+          },
+          uploadedBy: {
+            select: { name: true, role: true }
           }
         }
       }),
-      prisma.student.findMany({
-        where: {
-          user: {
-            approvalStatus: 'APPROVED',
-            isBlocked: false
-          }
-        },
-        select: {
-          id: true,
-          rollNo: true,
-          year: true,
-          section: true,
-          isCoordinator: true,
-          points: true,
-          user: {
+      prisma.event.findMany({
+        orderBy: { date: 'desc' },
+        take: 30,
+        include: {
+          _count: { select: { registrations: true, photos: true } },
+          createdBy: {
             select: {
-              name: true,
-              avatarUrl: true
-            }
-          },
-          department: {
-            select: {
-              name: true,
-              code: true
+              department: { select: { name: true, code: true } }
             }
           }
-        },
-        orderBy: { points: 'desc' },
-        take: 100
+        }
+      }),
+      prisma.facultyDesk.findMany({
+        where: { isVisible: true },
+        orderBy: [
+          { role: 'asc' },
+          { sortOrder: 'asc' },
+          { createdAt: 'asc' }
+        ]
       })
     ]);
 
-    const formattedVolunteers = volunteers.map(v => ({
-      id: v.id,
-      name: v.user.name,
-      avatarUrl: v.user.avatarUrl,
-      department: v.department.name,
-      departmentCode: v.department.code,
-      rollNo: v.rollNo,
-      year: v.year,
-      section: v.section,
-      isCoordinator: v.isCoordinator,
-      points: v.points || 0
+    const formattedPhotos = recentPhotos.map(p => ({
+      id: p.id,
+      url: p.url,
+      caption: p.caption || '',
+      createdAt: p.createdAt,
+      eventId: p.eventId,
+      eventTitle: p.event?.title,
+      eventDescription: p.event?.description,
+      eventDate: p.event?.date,
+      eventLocation: p.event?.location,
+      eventType: p.event?.type,
+      eventStatus: p.event?.status,
+      uploadedBy: p.uploadedBy?.name,
+      uploaderRole: p.uploadedBy?.role,
+      departmentName: p.event?.createdBy?.department?.name || 'NSS Unit',
+      departmentCode: p.event?.createdBy?.department?.code || 'NSS'
+    }));
+
+    const formattedEvents = events.map(e => ({
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      type: e.type,
+      status: e.status,
+      date: e.date,
+      location: e.location,
+      registrationsCount: e._count.registrations,
+      photosCount: e._count.photos,
+      departmentName: e.createdBy?.department?.name || 'NSS Unit',
+      departmentCode: e.createdBy?.department?.code || 'NSS'
+    }));
+
+    // Sort faculty profiles: PC first, POs second
+    const sortedFaculty = facultyProfiles.sort((a, b) => {
+      if (a.role === 'NSS_PC' && b.role !== 'NSS_PC') return -1;
+      if (a.role !== 'NSS_PC' && b.role === 'NSS_PC') return 1;
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    }).map(p => ({
+      ...p,
+      achievements: Array.isArray(p.achievements) ? p.achievements : []
     }));
 
     return NextResponse.json({
@@ -79,7 +130,9 @@ export async function GET() {
         code: d.code,
         count: d._count.students
       })),
-      volunteers: formattedVolunteers
+      photos: formattedPhotos,
+      events: formattedEvents,
+      facultyDesk: sortedFaculty
     }, { status: 200 });
 
   } catch (error) {

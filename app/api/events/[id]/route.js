@@ -64,10 +64,11 @@ export const PUT = withAuth(async (req, { params, user }) => {
     const eventToUpdate = await prisma.event.findUnique({ where: { id } });
     if (!eventToUpdate) return NextResponse.json({ message: 'Not found' }, { status: 404 });
 
-    const isCreator = eventToUpdate.createdById === dbUser.id;
-    const isAdmin = dbUser.role === 'ADMIN';
-    if (!isCreator && !isAdmin) {
-      return NextResponse.json({ message: 'Only the creator or admin can edit' }, { status: 403 });
+    const isManager = dbUser.role === 'ADMIN' ||
+                      dbUser.role === 'FACULTY' ||
+                      dbUser.student?.isCoordinator === true;
+    if (!isManager) {
+      return NextResponse.json({ message: 'Only faculty, coordinators, or admins can edit event details' }, { status: 403 });
     }
 
     const body = await req.json();

@@ -25,34 +25,15 @@ function resolvePostLoginRoute(dbUser) {
   return { redirect: '/student/events' };
 }
 
-const DEMO_ACCOUNTS = {
-  admin: { email: 'admin1@erp.com', password: 'AdminPass1!', label: 'Admin' },
-  faculty: { email: 'faculty1@erp.com', password: 'FacultyPass1!', label: 'Faculty' },
-  coordinator: { email: 'coord1@erp.com', password: 'CoordPass1!', label: 'Coordinator' },
-  student: { email: 'volunteer1@erp.com', password: 'VolunteerPass1!', label: 'Volunteer' },
-};
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
-  const roleParam = searchParams.get('role');
   const { supabase, signOut, refreshUser } = useSupabase();
 
-  const initialAcc = DEMO_ACCOUNTS[roleParam] || { email: '', password: '' };
-  const [formData, setFormData] = useState({ email: initialAcc.email, password: initialAcc.password });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (roleParam && DEMO_ACCOUNTS[roleParam]) {
-      setFormData({
-        email: DEMO_ACCOUNTS[roleParam].email,
-        password: DEMO_ACCOUNTS[roleParam].password
-      });
-    }
-  }, [roleParam]);
-
   useEffect(() => {
     if (urlError === 'auth-callback-failed') {
       setError('An error occurred during authentication callback.');
@@ -67,13 +48,6 @@ function LoginForm() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const fillDemoAccount = (roleKey) => {
-    const acc = DEMO_ACCOUNTS[roleKey];
-    if (acc) {
-      setFormData({ email: acc.email, password: acc.password });
-      setError('');
-    }
-  };
 
   const handlePostAuthNavigation = async (token) => {
     try {
@@ -176,43 +150,6 @@ function LoginForm() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-100 dark:border-slate-700">
           
-          {/* 1-Click Demo Credentials Quick Fill */}
-          <div className="mb-6 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
-            <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 text-center uppercase tracking-wider">
-              ⚡ Quick Demo Credentials Fill
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('admin')}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
-              >
-                👑 Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('faculty')}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
-              >
-                🎓 Faculty
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('coordinator')}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
-              >
-                ⭐ Coordinator
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('student')}
-                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:border-logo-teal transition shadow-xs text-center"
-              >
-                🤝 Volunteer
-              </button>
-            </div>
-          </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
             

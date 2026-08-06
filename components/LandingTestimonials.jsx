@@ -1,34 +1,49 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Quote } from 'lucide-react';
 
+const FALLBACK = [
+  {
+    name: "Bhuvana Mohan",
+    role: "Student Coordinator",
+    dept: "CSE Dept",
+    quote: "This portal has taught me that the smallest acts of service can bring the biggest smiles. Managing volunteers on this platform is incredibly fast, structured, and easy.",
+    avatar: "BM"
+  },
+  {
+    name: "Dr. K. Srinivasan",
+    role: "Program Officer",
+    dept: "Mechanical Dept",
+    quote: "This portal has completely digitized our operations. Event creation, registrations, attendance tracking, and volunteer hour auditing are now fully transparent.",
+    avatar: "KS"
+  },
+  {
+    name: "Ananya Rao",
+    role: "Volunteer Student",
+    dept: "ECE Dept",
+    quote: "Participating in campaigns is extremely fulfilling. I can easily register for events, check my attendance history, and download certificates directly from my student portfolio.",
+    avatar: "AR"
+  }
+];
+
 export default function LandingTestimonials() {
   const [activeTab, setActiveTab] = useState(0);
+  const [testimonials, setTestimonials] = useState(FALLBACK);
 
-  const testimonials = [
-    {
-      name: "Bhuvana Mohan",
-      role: "Student Coordinator",
-      dept: "CSE Dept",
-      quote: "This portal has taught me that the smallest acts of service can bring the biggest smiles. Managing volunteers on this platform is incredibly fast, structured, and easy.",
-      avatar: "BM"
-    },
-    {
-      name: "Dr. K. Srinivasan",
-      role: "Program Officer",
-      dept: "Mechanical Dept",
-      quote: "This portal has completely digitized our operations. Event creation, registrations, attendance tracking, and volunteer hour auditing are now fully transparent.",
-      avatar: "KS"
-    },
-    {
-      name: "Ananya Rao",
-      role: "Volunteer Student",
-      dept: "ECE Dept",
-      quote: "Participating in campaigns is extremely fulfilling. I can easily register for events, check my attendance history, and download certificates directly from my student portfolio.",
-      avatar: "AR"
-    }
-  ];
+  useEffect(() => {
+    fetch('/api/testimonials')
+      .then(r => r.json())
+      .then(data => {
+        if (data.testimonials && data.testimonials.length > 0) {
+          setTestimonials(data.testimonials);
+          setActiveTab(0);
+        }
+      })
+      .catch(() => {/* silently use fallback */});
+  }, []);
+
+  const active = testimonials[activeTab] || testimonials[0];
 
   return (
     <section className="py-24 bg-white dark:bg-slate-900 relative z-10">
@@ -48,7 +63,7 @@ export default function LandingTestimonials() {
           <div className="flex flex-row md:flex-col gap-4 w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 pb-6 md:pb-0 md:pr-6 justify-center md:justify-start">
             {testimonials.map((item, idx) => (
               <button
-                key={idx}
+                key={item.id || idx}
                 type="button"
                 onClick={() => setActiveTab(idx)}
                 className={`w-full text-left px-5 py-3 rounded-2xl flex items-center gap-4 transition-all duration-300 font-semibold cursor-pointer relative z-10 ${
@@ -83,11 +98,11 @@ export default function LandingTestimonials() {
                 <Quote className="w-16 h-16 fill-current leading-none" />
               </div>
               <p className="text-lg sm:text-xl font-medium text-slate-700 dark:text-slate-300 italic leading-relaxed">
-                &ldquo;{testimonials[activeTab].quote}&rdquo;
+                &ldquo;{active.quote}&rdquo;
               </p>
               <div className="pt-4 border-t border-slate-100 dark:border-slate-700/60">
-                <h4 className="font-bold text-slate-800 dark:text-slate-100">{testimonials[activeTab].name}</h4>
-                <p className="text-xs text-slate-500">{testimonials[activeTab].role} &bull; {testimonials[activeTab].dept}</p>
+                <h4 className="font-bold text-slate-800 dark:text-slate-100">{active.name}</h4>
+                <p className="text-xs text-slate-500">{active.role} &bull; {active.dept}</p>
               </div>
             </motion.div>
           </div>

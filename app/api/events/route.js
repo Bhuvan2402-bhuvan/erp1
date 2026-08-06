@@ -31,6 +31,15 @@ export const GET = withAuth(async (req, { user }) => {
       where.type = type;
     }
 
+    // Automatically mark past events as COMPLETED if currently UPCOMING or ONGOING
+    await prisma.event.updateMany({
+      where: {
+        status: { in: ['UPCOMING', 'ONGOING'] },
+        date: { lt: new Date() }
+      },
+      data: { status: 'COMPLETED' }
+    });
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
         where,

@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
 import { validate, updateUserSchema } from '@/lib/validations';
 import { sendApprovalEmail } from '@/lib/email';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const PUT = withAuth(async (req, { params, user }) => {
   try {
@@ -77,6 +78,13 @@ export const PUT = withAuth(async (req, { params, user }) => {
       if (data.approvalStatus === 'APPROVED') {
         sendApprovalEmail(updatedUser).catch(err => console.error(err));
       }
+      // If departmentId changed, sync to student profile as well
+      if (data.departmentId !== undefined) {
+        const studentRecord = await prisma.student.findUnique({ where: { userId: id } });
+        if (studentRecord) {
+          await prisma.student.update({ where: { id: studentRecord.id }, data: { departmentId: data.departmentId } });
+        }
+      }
     }
 
     // Student-specific: coordinator promotion, mentor assignment
@@ -129,3 +137,46 @@ export const PUT = withAuth(async (req, { params, user }) => {
     return sanitizeErrorResponse(error, 'Error updating user');
   }
 });
+
+// DELETE /api/users/[id] — Admin only: permanently delete a volunteer
+export const DELETE = withAuth(async (req, { params, user }) => {
+  try {
+    const { dbUser: caller } = user;
+    if (caller.role !== 'ADMIN') {
+      return NextResponse.json({ message: 'Only administrators can delete users' }, { status: 403 });
+    }
+
+    const { id } = params;
+
+    // Prevent admin from deleting themselves
+    if (caller.id === id) {
+      return NextResponse.json({ message: 'You cannot delete your own account' }, { status: 400 });
+    }
+
+    // Fetch the target user to get their Supabase UID
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    // Only allow deleting students (volunteers), not admins or faculty
+    if (targetUser.role !== 'STUDENT') {
+      return NextResponse.json({ message: 'Only student volunteers can be deleted from this endpoint' }, { status: 400 });
+    }
+
+    // Delete from Supabase Auth first (removes login ability)
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(targetUser.supabaseUid);
+    if (authError) {
+      console.error('Supabase auth delete error:', authError);
+      // Continue — Prisma delete below will still clean up the DB record
+    }
+
+    // Delete from DB — cascade handles Student, attendance, issues, etc.
+    await prisma.user.delete({ where: { id } });
+
+    return NextResponse.json({ message: 'Volunteer deleted successfully' }, { status: 200 });
+  } catch (error) {
+    return sanitizeErrorResponse(error, 'Error deleting user');
+  }
+});
+
