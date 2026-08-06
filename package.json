@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "dev:backend": "node server/index.js",
-    "build": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
-    "build:next": "next build",
+    "build": "next build",
+    "build:worker": "opennextjs-cloudflare build --dangerouslyUseUnsupportedNextVersion",
+    "deploy": "npm run build:worker && wrangler deploy",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",
