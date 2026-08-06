@@ -16,6 +16,8 @@
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.mjs",
     "server:start": "node server/index.js",
+    "init:r2": "node scripts/init-r2.mjs",
+    "init:render": "node server/scripts/init-render.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
