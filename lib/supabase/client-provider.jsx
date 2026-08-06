@@ -6,16 +6,34 @@ const SupabaseContext = createContext(null);
 
 export function SupabaseProvider({ children }) {
   const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user,     setUser]    = useState(null);
+  const [loading,  setLoading] = useState(true);
 
+  // ─── getAccessToken ─────────────────────────────────────────────────────────
+  /**
+   * Returns the current Supabase JWT access token, or null if not signed in.
+   * Use this to attach `Authorization: Bearer <token>` when calling the
+   * Render Express backend.
+   *
+   * @returns {Promise<string|null>}
+   */
+  const getAccessToken = useCallback(async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.access_token ?? null;
+    } catch {
+      return null;
+    }
+  }, [supabase]);
+
+  // ─── checkUser ──────────────────────────────────────────────────────────────
   const checkUser = useCallback(async () => {
     try {
-      // First check if there's an active Supabase session locally
+      // 1. Check active Supabase session
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session?.user) {
-        // We have a Supabase session — verify against DB
+        // Verify against our DB and enrich with role/approval status
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const { user: dbUser } = await res.json();
@@ -25,10 +43,10 @@ export function SupabaseProvider({ children }) {
             return;
           }
         }
-        // Supabase session exists but no DB record — use Supabase user
+        // Supabase session exists but no DB record yet — use raw Supabase user
         setUser(session.user);
       } else {
-        // No Supabase session, but check if server-side cookies exist (cookie-based login)
+        // 2. No Supabase session — check server-side cookies (legacy login path)
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const { user: dbUser } = await res.json();
@@ -40,13 +58,14 @@ export function SupabaseProvider({ children }) {
         }
         setUser(null);
       }
-    } catch (err) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
   }, [supabase]);
 
+  // ─── Auth state listener ─────────────────────────────────────────────────────
   useEffect(() => {
     checkUser();
 
@@ -61,18 +80,15 @@ export function SupabaseProvider({ children }) {
     return () => subscription.unsubscribe();
   }, [supabase, checkUser]);
 
+  // ─── signOut ────────────────────────────────────────────────────────────────
   const signOut = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (e) {}
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {}
+    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch { /* ignore */ }
+    try { await supabase.auth.signOut(); } catch { /* ignore */ }
     setUser(null);
   };
 
   return (
-    <SupabaseContext.Provider value={{ supabase, user, loading, signOut, refreshUser: checkUser }}>
+    <SupabaseContext.Provider value={{ supabase, user, loading, signOut, refreshUser: checkUser, getAccessToken }}>
       {children}
     </SupabaseContext.Provider>
   );
@@ -80,10 +96,9 @@ export function SupabaseProvider({ children }) {
 
 export function useSupabase() {
   const ctx = useContext(SupabaseContext);
-  if (!ctx) throw new Error('useSupabase must be used within SupabaseProvider');
+  if (!ctx) throw new Error('useSupabase must be used within <SupabaseProvider>');
   return ctx;
 }
 
-// Backward compatibility hook alias
+// Backward-compat alias kept for any component that still imports useFirebase
 export const useFirebase = useSupabase;
-

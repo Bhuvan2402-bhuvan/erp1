@@ -6,16 +6,41 @@ services:
     plan: free
     rootDir: server
     buildCommand: npm install && npx prisma generate
-    startCommand: npm start
+    startCommand: node index.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      # ── Supabase JWT Auth ─────────────────────────────────────────────────
+      - key: SUPABASE_JWT_SECRET
+        sync: false           # Set manually in Render dashboard
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      # ── Supabase PostgreSQL (Prisma) ──────────────────────────────────────
       - key: DATABASE_URL
-        fromDatabase:
-          name: vvitu-erp-db
-          property: connectionString
+        sync: false           # Get from Supabase → Settings → Database → Transaction pooler
+      - key: DIRECT_URL
+        sync: false           # Get from Supabase → Settings → Database → Session pooler
+      # ── CORS ──────────────────────────────────────────────────────────────
+      - key: ALLOWED_ORIGIN
+        sync: false           # Set to your Vercel/Cloudflare frontend URL
+      # ── Cloudflare R2 Storage ─────────────────────────────────────────────
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: vvitu-erp-storage
+      - key: R2_PUBLIC_URL
+        sync: false
+      # ── Email ─────────────────────────────────────────────────────────────
+      - key: RESEND_API_KEY
+        sync: false
+      # ── Legacy R2 variable names (backward compat) ────────────────────────
       - key: CLOUDFLARE_R2_ACCOUNT_ID
         sync: false
       - key: CLOUDFLARE_R2_ACCESS_KEY_ID
@@ -28,10 +53,3 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
-
-databases:
-  - name: vvitu-erp-db
-    plan: free
-    region: singapore
-    databaseName: vvitu_erp
-    user: vvitu_user
