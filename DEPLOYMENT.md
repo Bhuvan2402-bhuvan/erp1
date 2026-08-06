@@ -36,6 +36,11 @@ This guide details the step-by-step instructions for deploying the **Frontend to
 - **Start Command**: `npm start`
 - **Health Check Path**: `/health`
 
+### Render Outbound IP Whitelisting (Cloudflare & Database Security)
+If you enforce IP Whitelisting on your Database or Cloudflare WAF Security rules, allow outbound traffic from Render's static egress IP CIDR blocks:
+- `74.220.52.0/24`
+- `74.220.60.0/24`
+
 ---
 
 ## 3. Vercel Deployment (Next.js Frontend)
