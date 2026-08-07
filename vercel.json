@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://vvitu-erp-api.onrender.com/api/:path*"
+      "destination": "https://vvitu-erp-backend.onrender.com/api/:path*"
     }
   ]
 }
