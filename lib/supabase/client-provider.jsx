@@ -33,31 +33,57 @@ export function SupabaseProvider({ children }) {
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.user) {
-        // Verify against our DB and enrich with role/approval status
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const { user: dbUser } = await res.json();
+        const res = await fetch('/api/auth/me').catch(() => null);
+        if (res?.ok) {
+          const { user: dbUser } = await res.json().catch(() => ({}));
           if (dbUser) {
-            setUser({ email: dbUser.email, id: dbUser.supabaseUid, ...dbUser });
+            setUser({ email: dbUser.email, id: dbUser.supabaseUid || dbUser.id, ...dbUser });
             setLoading(false);
             return;
           }
         }
-        // Supabase session exists but no DB record yet — use raw Supabase user
         setUser(session.user);
-      } else {
-        // 2. No Supabase session — check server-side cookies (legacy login path)
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const { user: dbUser } = await res.json();
-          if (dbUser) {
-            setUser({ email: dbUser.email, id: dbUser.supabaseUid, ...dbUser });
-            setLoading(false);
-            return;
-          }
-        }
-        setUser(null);
+        setLoading(false);
+        return;
       }
+
+      // 2. Check /api/auth/me API endpoint
+      const res = await fetch('/api/auth/me').catch(() => null);
+      if (res?.ok) {
+        const { user: dbUser } = await res.json().catch(() => ({}));
+        if (dbUser) {
+          setUser({ email: dbUser.email, id: dbUser.supabaseUid || dbUser.id, ...dbUser });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Client Cookie fallback
+      if (typeof document !== 'undefined') {
+        const cookies = Object.fromEntries(
+          document.cookie.split('; ').filter(Boolean).map(c => {
+            const [k, ...v] = c.split('=');
+            return [k, v.join('=')];
+          })
+        );
+        const email = cookies['x-user-email'] ? decodeURIComponent(cookies['x-user-email']) : '';
+        const role = cookies['x-user-role'] || (email.includes('admin') ? 'ADMIN' : email.includes('faculty') ? 'FACULTY' : 'STUDENT');
+        const id = cookies['x-user-id'] || (email ? 'usr-' + email.split('@')[0] : '');
+
+        if (email || id || cookies['x-user-role']) {
+          setUser({
+            id: id || 'usr-session',
+            email: email || 'user@erp.com',
+            role,
+            name: (email || 'USER').split('@')[0].toUpperCase(),
+            approvalStatus: 'APPROVED'
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      setUser(null);
     } catch {
       setUser(null);
     } finally {

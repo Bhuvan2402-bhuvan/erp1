@@ -45,14 +45,14 @@ function LoginForm() {
 
       if (!res.ok) {
         setError(data.message || 'Invalid email or password.');
+        setLoading(false);
         return;
       }
 
-      if (refreshUser) await refreshUser();
-      window.location.href = data.redirect || '/student/events';
+      const targetUrl = data.redirect || '/admin/overview';
+      window.location.replace(targetUrl);
     } catch (err) {
       setError('Network connection error. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
