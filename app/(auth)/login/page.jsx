@@ -6,30 +6,11 @@ import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSupabase } from '@/lib/supabase/client-provider';
 
-function resolvePostLoginRoute(dbUser) {
-  if (!dbUser) return { redirect: '/login' };
-  if (dbUser.isBlocked) return { error: 'Your account has been blocked.' };
-  if (dbUser.approvalStatus === 'REJECTED') return { error: 'Your account was rejected.' };
-
-  if (dbUser.role !== 'ADMIN' && (
-    (dbUser.role === 'FACULTY' && !dbUser.faculty) ||
-    (dbUser.role === 'STUDENT' && !dbUser.student)
-  )) {
-    return { redirect: '/onboarding' };
-  }
-
-  if (dbUser.approvalStatus === 'PENDING') return { redirect: '/pending' };
-
-  if (dbUser.role === 'ADMIN') return { redirect: '/admin/overview' };
-  if (dbUser.role === 'FACULTY') return { redirect: '/faculty/branch' };
-  return { redirect: '/student/events' };
-}
-
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
-  const { supabase, signOut, refreshUser } = useSupabase();
+  const { supabase, refreshUser } = useSupabase();
 
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
@@ -48,66 +29,29 @@ function LoginForm() {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-
-  const handlePostAuthNavigation = async (token) => {
-    try {
-      const sessionRes = await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessToken: token || 'mock-fallback',
-          fallbackEmail: formData.email
-        })
-      });
-
-      if (!sessionRes.ok) {
-        const sessionData = await sessionRes.json().catch(() => ({}));
-        setError(sessionData.message || 'Session establishment failed. Please try again.');
-        return;
-      }
-
-      if (refreshUser) await refreshUser();
-
-      const res = await fetch('/api/auth/me');
-      if (res.ok) {
-        const { user: dbUser } = await res.json();
-        const result = resolvePostLoginRoute(dbUser);
-        if (result.error) {
-          await signOut();
-          setError(result.error);
-          return;
-        }
-        window.location.href = result.redirect;
-      } else if (res.status === 401 || res.status === 404) {
-        window.location.href = '/onboarding';
-      } else {
-        window.location.href = '/';
-      }
-    } catch (err) {
-      setError('Verification error. Please try again.');
-    }
-  };
-
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
       });
 
-      if (authErr) {
-        setError(authErr.message || 'Invalid email or password.');
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.message || 'Invalid email or password.');
         return;
       }
 
-      const accessToken = data.session?.access_token;
-      await handlePostAuthNavigation(accessToken);
+      if (refreshUser) await refreshUser();
+      window.location.href = data.redirect || '/student/events';
     } catch (err) {
-      setError(err.message || 'Invalid email or password.');
+      setError('Network connection error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -149,40 +93,6 @@ function LoginForm() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-100 dark:border-slate-700">
           
-          <div className="mb-6 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
-            <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">Quick Demo Sign In:</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setFormData({ email: 'admin1@erp.com', password: 'NssErpAdmin#2026!' })}
-                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
-              >
-                🔑 Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ email: 'faculty1@erp.com', password: 'NssErpFaculty#2026!' })}
-                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
-              >
-                🎓 Faculty
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ email: 'coord1@erp.com', password: 'NssErpCoord#2026!' })}
-                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
-              >
-                ⭐ Coordinator
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ email: 'volunteer1@erp.com', password: 'NssErpVolunteer#2026!' })}
-                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
-              >
-                🤝 Volunteer
-              </button>
-            </div>
-          </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
             
