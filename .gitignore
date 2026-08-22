@@ -4,6 +4,10 @@ node_modules
 .env.local
 .env*.local
 .next
+.open-next
+.wrangler
+.agents
+.cursor
 
 # IDE & OS artifacts
 .vscode/
@@ -13,4 +17,5 @@ node_modules
 Thumbs.db
 *.zip
 test-db.js
+
 

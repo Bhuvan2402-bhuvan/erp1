@@ -44,9 +44,10 @@
 #### **Key System Highlights**:
 - 🔐 **Strict Role Governance**: Hard capped limits on Admin (4), Faculty (15), and Student Coordinator (20) accounts.
 - 📱 **25+ Custom Page Routes**: Role-segregated views for Volunteers, Coordinators, Faculty, Admins, and Public Guests.
+- 📝 **Dynamic Custom Forms Engine**: Visual builder with 18 field types, review approval workflow, completion analytics, and Excel `.xlsx` export.
 - 🛡️ **Anti-Proxy QR Gate**: TOTP time-sensitive QR code verification prevents fraudulent proxy attendance.
 - 💰 **Real-Time Financial Ledger**: Transparent tracking of Budgets, Income/Sponsorships, and Expenses with receipt verification.
-- 📦 **1-Click Data Sovereignty**: Complete offline JSON data export for financial records, attendance logs, and event archives.
+- 📦 **1-Click Data Sovereignty**: Complete offline JSON data export for financial records, attendance logs, forms data, and event archives.
 
 *🗣️ **Speaker Notes**: "Good morning. Today we present the complete feature breakdown of the VVITU NSS ERP. This platform addresses institutional challenges by providing tailored views and granular permissions across 5 role accounts and over 25 dedicated page routes."*
 

@@ -33,6 +33,18 @@ export default async function StudentLayout({ children }) {
     ...(isCoordinator ? [
       { id: 'volunteers', name: 'Volunteers', href: '/student/volunteers', basePath: '/student/volunteers', icon: 'ClipboardList' },
       { id: 'create-event', name: 'Post Event', href: '/student/create-event', basePath: '/student/create-event', icon: 'Calendar' },
+      // Coordinator form management
+      { id: 'forms', name: 'My Forms', href: '/student/forms', basePath: '/student/forms', icon: 'FileText' },
+      { id: 'forms-create', name: 'Create Form', href: '/student/forms/create', basePath: '/student/forms/create', icon: 'PlusCircle' },
+    ] : [
+      // All students see these
+      { id: 'forms-available', name: 'Available Forms', href: '/student/forms/available', basePath: '/student/forms/available', icon: 'FileText' },
+      { id: 'forms-submissions', name: 'My Submissions', href: '/student/forms/my-submissions', basePath: '/student/forms/my-submissions', icon: 'ClipboardCheck' },
+    ]),
+    // All students always see their submissions (coordinator already has it via My Forms)
+    ...(isCoordinator ? [
+      { id: 'forms-available', name: 'Available Forms', href: '/student/forms/available', basePath: '/student/forms/available', icon: 'FileText' },
+      { id: 'forms-submissions', name: 'My Submissions', href: '/student/forms/my-submissions', basePath: '/student/forms/my-submissions', icon: 'ClipboardCheck' },
     ] : []),
     { id: 'profile', name: 'My Profile', href: '/student/profile', basePath: '/student/profile', icon: 'UserCircle' },
   ];

@@ -1,61 +1,46 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, issueWarningSchema } from '@/lib/validations';
-import { rateLimit } from '@/lib/rate-limit';
-import { sendWarningNoticeEmail } from '@/lib/email';
+import { getUser } from '@/lib/auth-helpers';
+import { warningSchema } from '@/lib/validations';
 
-const warningLimiter = rateLimit({ interval: 60_000, uniqueTokenPerInterval: 500 });
+export const dynamic = 'force-dynamic';
 
-export const GET = withAuth(async (req, { user }) => {
+// GET /api/warnings — List warnings (scoped)
+export async function GET(request) {
   try {
-    const { dbUser } = user;
-    const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get('studentId');
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    let where = {};
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
 
+    const where = {};
     if (dbUser.role === 'STUDENT') {
-      if (!dbUser.student?.id) {
-        return NextResponse.json({ warnings: [] }, { status: 200 });
+      if (!dbUser.student) {
+        return NextResponse.json({ success: false, message: 'Student profile not active' }, { status: 400 });
       }
       if (dbUser.student.isCoordinator) {
-        // Student Coordinators can view warnings for their department
-        const deptId = dbUser.student.departmentId;
-        if (studentId) {
-          const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
-          if (!targetStudent || targetStudent.departmentId !== deptId) {
-            return NextResponse.json({ message: 'Forbidden. Student is not in your department.' }, { status: 403 });
-          }
-          where.studentId = studentId;
-        } else {
-          where.student = { departmentId: deptId };
-        }
+        where.student = { departmentId: dbUser.student.departmentId };
       } else {
-        // Regular volunteers can only see their own warnings
         where.studentId = dbUser.student.id;
       }
     } else if (dbUser.role === 'FACULTY') {
-      // Faculty can only see warnings for students in their department
-      const deptId = dbUser.faculty?.departmentId;
-      if (!deptId) return NextResponse.json({ warnings: [] }, { status: 200 });
-      if (studentId) {
-        // Verify target student belongs to this faculty's department
-        const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
-        if (!targetStudent || targetStudent.departmentId !== deptId) {
-          return NextResponse.json({ message: 'Forbidden. Student is not in your department.' }, { status: 403 });
-        }
-        where.studentId = studentId;
-      } else {
-        where.student = { departmentId: deptId };
+      if (dbUser.faculty?.departmentId) {
+        where.student = { departmentId: dbUser.faculty.departmentId };
       }
-    } else {
-      // ADMIN — can see all, optionally filtered by studentId
-      if (studentId) where.studentId = studentId;
     }
 
     const warnings = await prisma.warningLog.findMany({
       where,
+      orderBy: { createdAt: 'desc' },
       include: {
         student: {
           include: {
@@ -63,104 +48,98 @@ export const GET = withAuth(async (req, { user }) => {
             department: { select: { name: true, code: true } }
           }
         },
-        issuedBy: { select: { name: true, role: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    return NextResponse.json({ warnings }, { status: 200 });
-  } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching warning logs');
-  }
-});
-
-export const POST = withAuth(async (req, { user }) => {
-  try {
-    const { dbUser } = user;
-    const isCallerAdmin = dbUser.role === 'ADMIN';
-    const isCallerFaculty = dbUser.role === 'FACULTY';
-    const isCallerCoord = dbUser.role === 'STUDENT' && dbUser.student?.isCoordinator;
-
-    if (!isCallerAdmin && !isCallerFaculty && !isCallerCoord) {
-      return NextResponse.json({ message: 'Forbidden. Only Coordinators, Faculty, or Admins can issue warnings.' }, { status: 403 });
-    }
-
-    // Rate limit: 15 warnings per user per minute
-    const { success: withinLimit } = warningLimiter.check(15, `warning:${dbUser.id}`);
-    if (!withinLimit) {
-      return NextResponse.json({ message: 'Too many requests. Please slow down.' }, { status: 429 });
-    }
-
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(issueWarningSchema, body);
-    if (!success) {
-      return NextResponse.json({ message: validationError }, { status: 400 });
-    }
-
-    const { studentId, reason, proofUrl } = validated;
-
-    // Prevent self-warning
-    if (dbUser.student?.id === studentId) {
-      return NextResponse.json({ message: 'You cannot issue a warning to yourself.' }, { status: 403 });
-    }
-
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-      include: { user: true }
-    });
-
-    if (!student) {
-      return NextResponse.json({ message: 'Student volunteer not found' }, { status: 404 });
-    }
-
-    // Department Scoping check: Faculty and Coordinators can only issue warnings to branch students
-    if (!isCallerAdmin) {
-      const callerDeptId = isCallerFaculty ? dbUser.faculty?.departmentId : dbUser.student?.departmentId;
-      if (!callerDeptId || student.departmentId !== callerDeptId) {
-        return NextResponse.json({ message: 'Forbidden. You can only issue warnings to students in your own department.' }, { status: 403 });
+        issuedBy: { select: { name: true } }
       }
+    });
+
+    return NextResponse.json({ success: true, warnings });
+  } catch (error) {
+    console.error('[GET /api/warnings]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching warnings' }, { status: 500 });
+  }
+}
+
+// POST /api/warnings — Issue a new warning (Admins/Faculty/Coordinators)
+export async function POST(request) {
+  try {
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
+
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const validation = warningSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
+
+    const data = validation.data;
+
+    // Ensure student exists
+    const targetStudent = await prisma.student.findUnique({ where: { id: data.studentId } });
+    if (!targetStudent) {
+      return NextResponse.json({ success: false, message: 'Student profile not found' }, { status: 404 });
+    }
+
+    // Run transaction
     const result = await prisma.$transaction(async (tx) => {
-      const warning = await tx.warningLog.create({
+      const log = await tx.warningLog.create({
         data: {
-          studentId,
+          studentId: data.studentId,
           issuedById: dbUser.id,
-          reason,
-          proofUrl: proofUrl || null
+          reason: data.reason,
+          proofUrl: data.proofUrl || null
         }
       });
 
       const updatedStudent = await tx.student.update({
-        where: { id: studentId },
-        data: {
-          warnings: { increment: 1 }
-        }
+        where: { id: data.studentId },
+        data: { warnings: { increment: 1 } }
       });
 
-      await tx.notification.create({
-        data: {
-          userId: student.userId,
-          title: 'Warning Notice Issued ⚠️',
-          message: `Official warning issued by ${dbUser.name} for: "${reason}". Total Warning Count: ${updatedStudent.warnings}`,
-          type: 'WARNING'
-        }
-      });
-
-      // Dispatch transactional email via Resend
-      if (student.user?.email) {
-        sendWarningNoticeEmail(student.user, reason, updatedStudent.warnings).catch(err => console.error(err));
+      // Auto-block volunteer if warnings reach 3
+      if (updatedStudent.warnings >= 3) {
+        await tx.user.update({
+          where: { id: targetStudent.userId },
+          data: { isBlocked: true }
+        });
       }
 
-      return { warning, updatedStudent };
+      // Create notification
+      await tx.notification.create({
+        data: {
+          userId: targetStudent.userId,
+          title: `Disciplinary Warning Issued ⚠️ (${updatedStudent.warnings}/3)`,
+          message: `A warning has been issued by ${dbUser.name} for: "${data.reason}". ${updatedStudent.warnings >= 3 ? 'Your account has been automatically suspended.' : ''}`,
+          type: 'ALERT'
+        }
+      });
+
+      return log;
     });
 
-    return NextResponse.json({
-      message: `Warning successfully issued to ${student.user.name}`,
-      data: result
-    }, { status: 201 });
-
+    return NextResponse.json({ success: true, message: 'Warning issued successfully', warning: result }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error issuing warning');
+    console.error('[POST /api/warnings]', error);
+    return NextResponse.json({ success: false, message: 'Error issuing warning' }, { status: 500 });
   }
-});
+}

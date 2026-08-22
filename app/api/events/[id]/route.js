@@ -1,13 +1,28 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, updateEventSchema } from '@/lib/validations';
+import { getUser, requireRole } from '@/lib/auth-helpers';
+import { updateEventSchema } from '@/lib/validations';
 
-// GET /api/events/[id] — Event details
-export const GET = withAuth(async (req, { params, user }) => {
+export const dynamic = 'force-dynamic';
+
+// GET /api/events/:id — Get event details with conditional relations
+export async function GET(request, { params }) {
   try {
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
     const { id } = params;
-    const { dbUser } = user;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
     const isManager = dbUser.role === 'ADMIN' ||
                       dbUser.role === 'FACULTY' ||
                       dbUser.student?.isCoordinator === true;
@@ -44,37 +59,53 @@ export const GET = withAuth(async (req, { params, user }) => {
     }
 
     const event = await prisma.event.findUnique({ where: { id }, include });
-    if (!event) return NextResponse.json({ message: 'Event not found' }, { status: 404 });
-
-    return NextResponse.json({ event }, { status: 200 });
-  } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching event');
-  }
-});
-
-// PUT /api/events/[id] — Update event
-export const PUT = withAuth(async (req, { params, user }) => {
-  try {
-    const { dbUser } = user;
-    if (dbUser.role === 'STUDENT' && !dbUser.student?.isCoordinator) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    if (!event) {
+      return NextResponse.json({ success: false, message: 'Event not found' }, { status: 404 });
     }
 
+    return NextResponse.json({ success: true, event });
+  } catch (error) {
+    console.error('[GET /api/events/:id]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching event details' }, { status: 500 });
+  }
+}
+
+// PUT /api/events/:id — Edit event details
+export async function PUT(request, { params }) {
+  try {
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
     const { id } = params;
-    const eventToUpdate = await prisma.event.findUnique({ where: { id } });
-    if (!eventToUpdate) return NextResponse.json({ message: 'Not found' }, { status: 404 });
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
 
     const isManager = dbUser.role === 'ADMIN' ||
                       dbUser.role === 'FACULTY' ||
                       dbUser.student?.isCoordinator === true;
+
     if (!isManager) {
-      return NextResponse.json({ message: 'Only faculty, coordinators, or admins can edit event details' }, { status: 403 });
+      return NextResponse.json({ success: false, message: 'Only faculty, coordinators, or admins can edit event details' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { success, data, error: validationError } = validate(updateEventSchema, body);
-    if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
+    const body = await request.json();
+    const validation = updateEventSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
 
+    const data = validation.data;
     const updateData = {};
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
@@ -85,21 +116,26 @@ export const PUT = withAuth(async (req, { params, user }) => {
     if (data.status !== undefined) updateData.status = data.status;
 
     const event = await prisma.event.update({ where: { id }, data: updateData });
-    return NextResponse.json({ message: 'Event updated', event }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Event updated successfully', event });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error updating event');
+    console.error('[PUT /api/events/:id]', error);
+    return NextResponse.json({ success: false, message: 'Error updating event details' }, { status: 500 });
   }
-});
+}
 
-// DELETE /api/events/[id] — Delete event (admin only)
-export const DELETE = withAuth(async (req, { params, user }) => {
+// DELETE /api/events/:id — Admin only: Delete event
+export async function DELETE(request, { params }) {
   try {
-    if (user.dbUser.role !== 'ADMIN') {
-      return NextResponse.json({ message: 'Admin only' }, { status: 403 });
+    const roleCheck = await requireRole(['ADMIN']);
+    if (!roleCheck.authorized) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: roleCheck.reason === 'unauthenticated' ? 401 : 403 });
     }
-    await prisma.event.delete({ where: { id: params.id } });
-    return NextResponse.json({ message: 'Event deleted' }, { status: 200 });
+
+    const { id } = params;
+    await prisma.event.delete({ where: { id } });
+    return NextResponse.json({ success: true, message: 'Event deleted successfully' });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error deleting event');
+    console.error('[DELETE /api/events/:id]', error);
+    return NextResponse.json({ success: false, message: 'Error deleting event' }, { status: 500 });
   }
-});
+}

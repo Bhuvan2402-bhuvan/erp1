@@ -1,67 +1,101 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, eventPhotoSchema } from '@/lib/validations';
+import { getUser } from '@/lib/auth-helpers';
+import { eventPhotoSchema } from '@/lib/validations';
 
-// GET /api/events/[id]/photos — Get photos for an event
-export const GET = withAuth(async (req, { params }) => {
-  try {
-    const photos = await prisma.eventPhoto.findMany({
-      where: { eventId: params.id },
-      include: { uploadedBy: { select: { name: true } } },
-      orderBy: { createdAt: 'desc' }
-    });
-    return NextResponse.json({ photos }, { status: 200 });
-  } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching photos');
-  }
-});
+export const dynamic = 'force-dynamic';
 
-// POST /api/events/[id]/photos — Upload photo metadata (Admin, Faculty, Coordinator)
-export const POST = withAuth(async (req, { params, user }) => {
+// POST /api/events/:id/photos — Upload photo metadata
+export async function POST(request, { params }) {
   try {
-    const { dbUser } = user;
-    const isCoordinator = dbUser.student?.isCoordinator;
-    if (dbUser.role === 'STUDENT' && !isCoordinator) {
-      return NextResponse.json({ message: 'Only coordinators can upload photos' }, { status: 403 });
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+    const { id } = params;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(eventPhotoSchema, body);
-    if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
+    const isCoordinator = dbUser.student?.isCoordinator;
+    if (dbUser.role === 'STUDENT' && !isCoordinator) {
+      return NextResponse.json({ success: false, message: 'Only coordinators can upload photos' }, { status: 403 });
+    }
 
-    const { url, caption } = validated;
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) {
+      return NextResponse.json({ success: false, message: 'Event not found' }, { status: 404 });
+    }
+
+    const body = await request.json();
+    const validation = eventPhotoSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
+
     const photo = await prisma.eventPhoto.create({
-      data: { eventId: params.id, url, caption, uploadedById: dbUser.id }
+      data: {
+        eventId: id,
+        url: validation.data.url,
+        caption: validation.data.caption || null,
+        uploadedById: dbUser.id
+      }
     });
 
-    return NextResponse.json({ message: 'Photo added', photo }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Photo uploaded successfully', photo }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error uploading photo');
+    console.error('[POST /api/events/:id/photos]', error);
+    return NextResponse.json({ success: false, message: 'Error uploading event photo' }, { status: 500 });
   }
-});
+}
 
-// DELETE /api/events/[id]/photos?photoId=... — Delete photo
-export const DELETE = withAuth(async (req, { params, user }) => {
+// DELETE /api/events/:id/photos — Delete photo from event (requires ?photoId query param)
+export async function DELETE(request, { params }) {
   try {
-    const { dbUser } = user;
-    const { searchParams } = new URL(req.url);
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
     const photoId = searchParams.get('photoId');
-    if (!photoId) return NextResponse.json({ message: 'photoId query parameter is required' }, { status: 400 });
+    if (!photoId) {
+      return NextResponse.json({ success: false, message: 'photoId query parameter is required' }, { status: 400 });
+    }
 
     const photo = await prisma.eventPhoto.findUnique({ where: { id: photoId } });
-    if (!photo) return NextResponse.json({ message: 'Photo not found' }, { status: 404 });
+    if (!photo) {
+      return NextResponse.json({ success: false, message: 'Photo not found' }, { status: 404 });
+    }
 
     const isUploader = photo.uploadedById === dbUser.id;
     const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || dbUser.student?.isCoordinator;
     if (!isUploader && !isManager) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ success: false, message: 'Forbidden: Insufficient deletion permissions' }, { status: 403 });
     }
 
     await prisma.eventPhoto.delete({ where: { id: photoId } });
-    return NextResponse.json({ message: 'Photo deleted successfully' }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'Photo deleted successfully' });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error deleting photo');
+    console.error('[DELETE /api/events/:id/photos]', error);
+    return NextResponse.json({ success: false, message: 'Error deleting photo' }, { status: 500 });
   }
-});
-
+}

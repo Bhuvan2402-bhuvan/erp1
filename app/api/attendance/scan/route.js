@@ -14,7 +14,7 @@ export const POST = withAuth(async (req, { user }) => {
     const body = await req.json();
     const { eventId: bodyEventId, qrPayload, rollNo: rawRollNo, studentId: rawStudentId } = body;
 
-    let targetEventId = bodyEventId;
+    let eventId = bodyEventId;
     let scannedRollNo = rawRollNo;
     let scannedStudentId = rawStudentId;
     let isEventScan = false;
@@ -24,7 +24,7 @@ export const POST = withAuth(async (req, { user }) => {
         const parsed = typeof qrPayload === 'string' && qrPayload.startsWith('{') ? JSON.parse(qrPayload) : { rollNo: qrPayload, code: qrPayload };
         if (parsed.type === 'EVENT_ATTENDANCE' || parsed.eventId || parsed.qrCode) {
           isEventScan = true;
-          if (parsed.eventId) targetEventId = parsed.eventId;
+          if (parsed.eventId) eventId = parsed.eventId;
           if (parsed.qrCode) scannedRollNo = parsed.qrCode;
         } else {
           if (parsed.studentId) scannedStudentId = parsed.studentId;
@@ -55,8 +55,8 @@ export const POST = withAuth(async (req, { user }) => {
 
     // Locate event
     let event = null;
-    if (targetEventId) {
-      event = await prisma.event.findUnique({ where: { id: targetEventId } });
+    if (eventId) {
+      event = await prisma.event.findUnique({ where: { id: eventId } });
     }
     if (!event && typeof qrPayload === 'string' && qrPayload.startsWith('NSS-EVT-')) {
       event = await prisma.event.findUnique({ where: { qrCode: qrPayload } });
@@ -71,7 +71,7 @@ export const POST = withAuth(async (req, { user }) => {
       return NextResponse.json({ message: 'Event not found or invalid QR code.' }, { status: 404 });
     }
 
-    targetEventId = event.id;
+    eventId = event.id;
 
     // Find student profile
     const student = await prisma.student.findFirst({

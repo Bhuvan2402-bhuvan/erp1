@@ -1,37 +1,42 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, createEventSchema } from '@/lib/validations';
+import { getUser } from '@/lib/auth-helpers';
+import { createEventSchema } from '@/lib/validations';
 
-// GET /api/events — List events (all authenticated users)
-export const GET = withAuth(async (req, { user }) => {
+export const dynamic = 'force-dynamic';
+
+// GET /api/events — List events with page/limit/status/type filters
+export async function GET(request) {
   try {
-    const { dbUser } = user;
-    const { searchParams } = new URL(req.url);
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '50'), 1), 100);
-    const skip = (page - 1) * limit;
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '50';
+
+    const pageNum = parseInt(page);
+    const limitNum = Math.min(Math.max(parseInt(limit), 1), 100);
+    const skip = (pageNum - 1) * limitNum;
 
     const where = {};
-    const validStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED', 'CANCELLED'];
-    const validTypes = ['ACTIVITY', 'CAMP', 'WORKSHOP', 'RALLY', 'AWARENESS'];
+    if (status) where.status = status;
+    if (type) where.type = type;
 
-    if (status) {
-      if (!validStatuses.includes(status)) {
-        return NextResponse.json({ message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` }, { status: 400 });
-      }
-      where.status = status;
-    }
-    if (type) {
-      if (!validTypes.includes(type)) {
-        return NextResponse.json({ message: `Invalid type. Must be one of: ${validTypes.join(', ')}` }, { status: 400 });
-      }
-      where.type = type;
-    }
-
-    // Automatically mark past events as COMPLETED if currently UPCOMING or ONGOING
+    // Auto-update status of expired events
     await prisma.event.updateMany({
       where: {
         status: { in: ['UPCOMING', 'ONGOING'] },
@@ -45,13 +50,11 @@ export const GET = withAuth(async (req, { user }) => {
         where,
         orderBy: { date: 'desc' },
         skip,
-        take: limit,
+        take: limitNum,
         include: {
           _count: { select: { registrations: true, attendances: true, photos: true } },
           ...(dbUser.student ? {
-            registrations: {
-              where: { studentId: dbUser.student.id }
-            }
+            registrations: { where: { studentId: dbUser.student.id } }
           } : {})
         }
       }),
@@ -65,33 +68,48 @@ export const GET = withAuth(async (req, { user }) => {
     });
 
     return NextResponse.json({
+      success: true,
       events: formattedEvents,
-      pagination: { total, page, limit, totalPages: Math.ceil(total / limit) }
-    }, { status: 200 });
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching events');
+    console.error('[GET /api/events]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching events' }, { status: 500 });
   }
-});
+}
 
-// POST /api/events — Create event (Admin, Faculty, Coordinator)
-export const POST = withAuth(async (req, { user }) => {
+// POST /api/events — Create Event (Admins/Faculty/Coordinators)
+export async function POST(request) {
   try {
-    const { dbUser } = user;
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    // Only Admin, Faculty, or Coordinators can create events
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
     const isCoordinator = dbUser.student?.isCoordinator;
     if (dbUser.role === 'STUDENT' && !isCoordinator) {
-      return NextResponse.json({ message: 'Only coordinators can create events' }, { status: 403 });
+      return NextResponse.json({ success: false, message: 'Only coordinators can create events' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(createEventSchema, body);
-
-    if (!success) {
-      return NextResponse.json({ message: validationError }, { status: 400 });
+    const body = await request.json();
+    const validation = createEventSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
     }
 
-    const { title, description, date, endDate, location, type } = validated;
+    const { title, description, date, endDate, location, type } = validation.data;
     const qrCode = body.qrCode || `NSS-EVT-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
     const event = await prisma.event.create({
@@ -107,8 +125,9 @@ export const POST = withAuth(async (req, { user }) => {
       }
     });
 
-    return NextResponse.json({ message: 'Event created', event }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Event created successfully', event }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error creating event');
+    console.error('[POST /api/events]', error);
+    return NextResponse.json({ success: false, message: 'Error creating event' }, { status: 500 });
   }
-});
+}

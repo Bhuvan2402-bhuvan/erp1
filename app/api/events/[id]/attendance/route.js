@@ -1,52 +1,109 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, markAttendanceSchema } from '@/lib/validations';
+import { getUser } from '@/lib/auth-helpers';
+import { markAttendanceSchema } from '@/lib/validations';
 
-// GET /api/events/[id]/attendance — Get attendance for an event
-export const GET = withAuth(async (req, { params, user }) => {
+export const dynamic = 'force-dynamic';
+
+// GET /api/events/:id/attendance — Get attendance roster for managers
+export async function GET(request, { params }) {
   try {
-    const { dbUser } = user;
-    const isCallerAdmin = dbUser.role === 'ADMIN';
-    const isCallerFaculty = dbUser.role === 'FACULTY';
-    const isCallerCoord = dbUser.role === 'STUDENT' && dbUser.student?.isCoordinator;
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+    const { id: eventId } = params;
 
-    if (!isCallerAdmin && !isCallerFaculty && !isCallerCoord) {
-      return NextResponse.json({ message: 'Forbidden. Only coordinators, faculty, or admins can view attendance rosters.' }, { status: 403 });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    const { id: eventId } = params;
+    const isManager = dbUser.role === 'ADMIN' ||
+                      dbUser.role === 'FACULTY' ||
+                      dbUser.student?.isCoordinator === true;
+
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Forbidden. Only coordinators, faculty, or admins can view attendance rosters.' }, { status: 403 });
+    }
+
     const attendances = await prisma.eventAttendance.findMany({
       where: { eventId },
       include: {
-        student: { include: { user: { select: { name: true, email: true } }, department: { select: { name: true, code: true } } } },
+        student: {
+          include: {
+            user: { select: { name: true, email: true } },
+            department: { select: { name: true, code: true } }
+          }
+        },
         markedBy: { select: { name: true } }
       }
     });
-    return NextResponse.json({ attendances }, { status: 200 });
-  } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching attendance');
-  }
-});
 
-// POST /api/events/[id]/attendance — Mark attendance (Admin, Faculty, Coordinator)
-// Uses a single transaction instead of N individual upserts
-export const POST = withAuth(async (req, { params, user }) => {
+    return NextResponse.json({ success: true, attendances });
+  } catch (error) {
+    console.error('[GET /api/events/:id/attendance]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching event attendance registry' }, { status: 500 });
+  }
+}
+
+// POST /api/events/:id/attendance — Bulk save attendance (using single prisma transaction)
+export async function POST(request, { params }) {
   try {
-    const { dbUser } = user;
-    const isCoordinator = dbUser.student?.isCoordinator;
-    if (dbUser.role === 'STUDENT' && !isCoordinator) {
-      return NextResponse.json({ message: 'Only coordinators can mark attendance' }, { status: 403 });
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+    const { id: eventId } = params;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { success, data, error: validationError } = validate(markAttendanceSchema, body);
-    if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
 
-    const { id: eventId } = params;
-    const { attendances } = data;
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Only coordinators, faculty, or admins can mark attendance' }, { status: 403 });
+    }
 
-    // Batch all upserts inside a single database transaction
+    const body = await request.json();
+    const validation = markAttendanceSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
+
+    const { attendances } = validation.data;
+
+    const presentStudentIds = attendances.filter(a => a.present).map(a => a.studentId);
+    let newPresentIds = [];
+
+    if (presentStudentIds.length > 0) {
+      // Find students who were ALREADY marked present before this request
+      const existingPresentAttendances = await prisma.eventAttendance.findMany({
+        where: {
+          eventId,
+          studentId: { in: presentStudentIds },
+          present: true
+        }
+      });
+      const alreadyPresentIds = existingPresentAttendances.map(a => a.studentId);
+      newPresentIds = presentStudentIds.filter(id => !alreadyPresentIds.includes(id));
+    }
+
+    // Run transaction
     const results = await prisma.$transaction(
       attendances.map(({ studentId, present }) =>
         prisma.eventAttendance.upsert({
@@ -57,8 +114,24 @@ export const POST = withAuth(async (req, { params, user }) => {
       )
     );
 
-    return NextResponse.json({ message: `Marked ${results.length} records`, count: results.length }, { status: 200 });
+    if (newPresentIds.length > 0) {
+      await prisma.student.updateMany({
+        where: { id: { in: newPresentIds } },
+        data: { points: { increment: 10 } }
+      });
+      await prisma.pointsLog.createMany({
+        data: newPresentIds.map(sid => ({
+          studentId: sid,
+          points: 10,
+          reason: `Attended Event ID: ${eventId}`,
+          awardedById: dbUser.id
+        }))
+      });
+    }
+
+    return NextResponse.json({ success: true, message: `Marked ${results.length} records`, count: results.length });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error marking attendance');
+    console.error('[POST /api/events/:id/attendance]', error);
+    return NextResponse.json({ success: false, message: 'Error marking bulk attendance' }, { status: 500 });
   }
-});
+}

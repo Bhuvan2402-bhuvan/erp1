@@ -1,76 +1,114 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, createIssueSchema } from '@/lib/validations';
-import { rateLimit } from '@/lib/rate-limit';
+import { getUser } from '@/lib/auth-helpers';
+import { issueSchema } from '@/lib/validations';
 
-const issueLimiter = rateLimit({ interval: 60 * 60 * 1000, uniqueTokenPerInterval: 500 });
+export const dynamic = 'force-dynamic';
 
-// GET /api/issues — List issues
-export const GET = withAuth(async (req, { user }) => {
+// GET /api/issues — List issues (scoped)
+export async function GET(request) {
   try {
-    const { dbUser } = user;
-    let where = {};
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    // Volunteers see only their own issues; Coordinators see issues in their department
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+
+    const where = {};
+    if (status) where.status = status;
+
     if (dbUser.role === 'STUDENT') {
-      if (!dbUser.student?.id) {
-        return NextResponse.json({ issues: [] }, { status: 200 });
+      if (!dbUser.student) {
+        return NextResponse.json({ success: false, message: 'Student profile not active' }, { status: 400 });
       }
+      // Coordinators see all issues in branch, regular student only sees their own
       if (dbUser.student.isCoordinator) {
         where.student = { departmentId: dbUser.student.departmentId };
       } else {
         where.studentId = dbUser.student.id;
       }
     } else if (dbUser.role === 'FACULTY') {
-      // Faculty can only see issues from their department
-      const deptId = dbUser.faculty?.departmentId;
-      if (!deptId) return NextResponse.json({ issues: [] }, { status: 200 });
-      where.student = { departmentId: deptId };
+      if (dbUser.faculty?.departmentId) {
+        where.student = { departmentId: dbUser.faculty.departmentId };
+      }
     }
-    // ADMIN: no filter — sees all issues
 
     const issues = await prisma.issue.findMany({
       where,
+      orderBy: { createdAt: 'desc' },
       include: {
-        student: { include: { user: { select: { name: true, email: true } }, department: { select: { name: true, code: true } } } },
+        student: {
+          include: {
+            user: { select: { name: true, email: true } },
+            department: { select: { name: true, code: true } }
+          }
+        },
         resolvedBy: { select: { name: true } }
-      },
-      orderBy: { createdAt: 'desc' }
+      }
     });
 
-    return NextResponse.json({ issues }, { status: 200 });
+    return NextResponse.json({ success: true, issues });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching issues');
+    console.error('[GET /api/issues]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching issues' }, { status: 500 });
   }
-});
+}
 
-
-// POST /api/issues — Report an issue (students only)
-export const POST = withAuth(async (req, { user }) => {
+// POST /api/issues — File a new issue (Students only)
+export async function POST(request) {
   try {
-    const { dbUser } = user;
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
     if (!dbUser.student) {
-      return NextResponse.json({ message: 'Only students can report issues' }, { status: 403 });
+      return NextResponse.json({ success: false, message: 'Only registered students can file complaints' }, { status: 400 });
     }
 
-    // Rate limit: 10 issues per hour per student
-    const { success: withinLimit } = issueLimiter.check(10, `issue:${dbUser.id}`);
-    if (!withinLimit) {
-      return NextResponse.json({ message: 'Too many complaint submissions. Please wait before submitting another.' }, { status: 429 });
+    const body = await request.json();
+    const validation = issueSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
     }
 
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(createIssueSchema, body);
-    if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
+    const { title, description } = validation.data;
 
-    const { title, description } = validated;
     const issue = await prisma.issue.create({
-      data: { studentId: dbUser.student.id, title, description }
+      data: {
+        studentId: dbUser.student.id,
+        title,
+        description,
+        status: 'OPEN'
+      }
     });
 
-    return NextResponse.json({ message: 'Issue reported', issue }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Complaint registered successfully', issue }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error reporting issue');
+    console.error('[POST /api/issues]', error);
+    return NextResponse.json({ success: false, message: 'Error filing complaint' }, { status: 500 });
   }
-});
+}

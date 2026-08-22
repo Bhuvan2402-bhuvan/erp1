@@ -1,27 +1,47 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUser, verifyAccess } from '@/lib/auth-helpers';
-import { sanitizeErrorResponse } from '@/lib/api-helpers';
+import { getUser } from '@/lib/auth-helpers';
 
-// DELETE /api/certificates/[id] — Delete certificate
-export async function DELETE(req, { params }) {
+export const dynamic = 'force-dynamic';
+
+// DELETE /api/certificates/:id — Delete certificate
+export async function DELETE(request, { params }) {
   try {
-    const userCtx = await getUser();
-    if (!userCtx || !userCtx.dbUser) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    const access = verifyAccess(userCtx.dbUser);
-    if (!access.authorized) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+    const { id } = params;
 
-    const cert = await prisma.certificate.findUnique({ where: { id: params.id } });
-    if (!cert) return NextResponse.json({ message: 'Not found' }, { status: 404 });
-
-    // Only owner or admin can delete
-    if (userCtx.dbUser.role !== 'ADMIN' && cert.studentId !== userCtx.dbUser.student?.id) {
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    await prisma.certificate.delete({ where: { id: params.id } });
-    return NextResponse.json({ message: 'Certificate deleted' }, { status: 200 });
+    const certificate = await prisma.certificate.findUnique({
+      where: { id },
+      include: { student: true }
+    });
+
+    if (!certificate) {
+      return NextResponse.json({ success: false, message: 'Certificate not found' }, { status: 404 });
+    }
+
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
+
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
+    await prisma.certificate.delete({ where: { id } });
+    return NextResponse.json({ success: true, message: 'Certificate deleted successfully' });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error deleting certificate');
+    console.error('[DELETE /api/certificates/:id]', error);
+    return NextResponse.json({ success: false, message: 'Error deleting certificate' }, { status: 500 });
   }
 }

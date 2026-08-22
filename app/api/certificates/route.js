@@ -1,82 +1,122 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, createCertificateSchema } from '@/lib/validations';
+import { getUser } from '@/lib/auth-helpers';
+import { certificateSchema } from '@/lib/validations';
 
-// GET /api/certificates — List certificates (own or scoped for admin/faculty)
-export const GET = withAuth(async (req, { user }) => {
+export const dynamic = 'force-dynamic';
+
+// GET /api/certificates — List certificates (scoped)
+export async function GET(request) {
   try {
-    const { dbUser } = user;
-    const { searchParams } = new URL(req.url);
-    const studentId = searchParams.get('studentId');
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    let where = {};
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const where = {};
     if (dbUser.role === 'STUDENT') {
-      if (!dbUser.student?.id) {
-        return NextResponse.json({ certificates: [] }, { status: 200 }); // No profile = no certificates
+      if (!dbUser.student) {
+        return NextResponse.json({ success: false, message: 'Student profile not active' }, { status: 400 });
       }
-      where.studentId = dbUser.student.id;
-    } else if (dbUser.role === 'FACULTY') {
-      // Faculty can only see certificates from students in their department
-      const facultyDeptId = dbUser.faculty?.departmentId;
-      if (studentId) {
-        // Verify the requested student belongs to the faculty's department
-        const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
-        if (!targetStudent || targetStudent.departmentId !== facultyDeptId) {
-          return NextResponse.json({ message: 'Forbidden. Student is not in your department.' }, { status: 403 });
-        }
-        where.studentId = studentId;
+      // If student is coordinator, let them see all certificates in branch
+      if (dbUser.student.isCoordinator) {
+        where.student = { departmentId: dbUser.student.departmentId };
       } else {
-        // Return all certificates from students in the faculty's department
-        where.student = { departmentId: facultyDeptId };
+        where.studentId = dbUser.student.id;
       }
-    } else if (dbUser.role === 'ADMIN') {
-      // Admins can see all, optionally filtered by studentId
-      if (studentId) {
-        where.studentId = studentId;
+    } else if (dbUser.role === 'FACULTY') {
+      if (dbUser.faculty?.departmentId) {
+        where.student = { departmentId: dbUser.faculty.departmentId };
       }
     }
 
     const certificates = await prisma.certificate.findMany({
       where,
-      include: { student: { include: { user: { select: { name: true } }, department: { select: { name: true, code: true } } } } },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    return NextResponse.json({ certificates }, { status: 200 });
-  } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching certificates');
-  }
-});
-
-// POST /api/certificates — Upload certificate (students only)
-export const POST = withAuth(async (req, { user }) => {
-  try {
-    const { dbUser } = user;
-    if (!dbUser.student) {
-      return NextResponse.json({ message: 'Only students can upload certificates' }, { status: 403 });
-    }
-
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(createCertificateSchema, body);
-
-    if (!success) {
-      return NextResponse.json({ message: validationError }, { status: 400 });
-    }
-
-    const { title, description, fileUrl } = validated;
-
-    const cert = await prisma.certificate.create({
-      data: {
-        studentId: dbUser.student.id,
-        title,
-        description,
-        fileUrl
+      orderBy: { createdAt: 'desc' },
+      include: {
+        student: {
+          include: {
+            user: { select: { name: true, email: true } },
+            department: { select: { name: true, code: true } }
+          }
+        }
       }
     });
 
-    return NextResponse.json({ message: 'Certificate uploaded', certificate: cert }, { status: 201 });
+    return NextResponse.json({ success: true, certificates });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error uploading certificate');
+    console.error('[GET /api/certificates]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching certificates' }, { status: 500 });
   }
-});
+}
+
+// POST /api/certificates — Award certificate (Admins/Faculty/Coordinators)
+export async function POST(request) {
+  try {
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
+
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Forbidden: Insufficient permissions to issue certificates' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const validation = certificateSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
+
+    const { studentId, title, description, fileUrl } = validation.data;
+
+    // Ensure student profile exists
+    const targetStudent = await prisma.student.findUnique({ where: { id: studentId } });
+    if (!targetStudent) {
+      return NextResponse.json({ success: false, message: 'Recipient student profile not found' }, { status: 404 });
+    }
+
+    const certificate = await prisma.certificate.create({
+      data: { studentId, title, description, fileUrl }
+    });
+
+    // Send notification
+    await prisma.notification.create({
+      data: {
+        userId: targetStudent.userId,
+        title: 'New Certificate Awarded! 🎓',
+        message: `You have been awarded the certificate: "${title}". View it on your dashboard.`,
+        type: 'ALERT'
+      }
+    });
+
+    return NextResponse.json({ success: true, message: 'Certificate issued successfully', certificate }, { status: 201 });
+  } catch (error) {
+    console.error('[POST /api/certificates]', error);
+    return NextResponse.json({ success: false, message: 'Error issuing certificate' }, { status: 500 });
+  }
+}

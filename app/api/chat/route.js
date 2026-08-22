@@ -1,123 +1,95 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
-import { validate, sendMessageSchema } from '@/lib/validations';
+import { getUser } from '@/lib/auth-helpers';
+import { chatMessageSchema } from '@/lib/validations';
 
-import { rateLimit } from '@/lib/rate-limit';
+export const dynamic = 'force-dynamic';
 
-const chatLimiter = rateLimit({ interval: 60_000, uniqueTokenPerInterval: 500 });
-
-// GET /api/chat — Get messages between two users (or list conversations)
-export const GET = withAuth(async (req, { user }) => {
+// GET /api/chat — Fetch messages between logged-in user and ?contactId
+export async function GET(request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const otherUserId = searchParams.get('userId');
-    const myId = user.dbUser.id;
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    if (!otherUserId) {
-      // Return list of distinct users chatted with (sent or received messages)
-      const [sent, received] = await Promise.all([
-        prisma.message.findMany({
-          where: { senderId: myId },
-          select: { receiverId: true },
-          distinct: ['receiverId'],
-        }),
-        prisma.message.findMany({
-          where: { receiverId: myId },
-          select: { senderId: true },
-          distinct: ['senderId'],
-        }),
-      ]);
-
-      const contactIds = [
-        ...new Set([
-          ...sent.map(m => m.receiverId),
-          ...received.map(m => m.senderId),
-        ]),
-      ].filter(id => id !== myId);
-
-      const users = await prisma.user.findMany({
-        where: { id: { in: contactIds } },
-        select: { id: true, name: true, email: true, role: true, avatarUrl: true },
-      });
-
-      return NextResponse.json({ conversations: users }, { status: 200 });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    // Return messages between me and the other user
+    const { searchParams } = new URL(request.url);
+    const contactId = searchParams.get('contactId');
+    if (!contactId) {
+      return NextResponse.json({ success: false, message: 'contactId parameter is required' }, { status: 400 });
+    }
+
     const messages = await prisma.message.findMany({
       where: {
         OR: [
-          { senderId: myId, receiverId: otherUserId },
-          { senderId: otherUserId, receiverId: myId }
+          { senderId: dbUser.id, receiverId: contactId },
+          { senderId: contactId, receiverId: dbUser.id }
         ]
       },
       orderBy: { createdAt: 'asc' }
     });
 
-    return NextResponse.json({ messages }, { status: 200 });
+    return NextResponse.json({ success: true, messages });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching messages');
+    console.error('[GET /api/chat]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching messages' }, { status: 500 });
   }
-});
+}
 
-// POST /api/chat — Send a message
-export const POST = withAuth(async (req, { user }) => {
+// POST /api/chat — Send message to receiverId
+export async function POST(request) {
   try {
-    const dbUser = user.dbUser;
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    // Rate limit: 30 messages per user per minute
-    const { success: withinLimit } = chatLimiter.check(30, `chat:${dbUser.id}`);
-    if (!withinLimit) {
-      return NextResponse.json({ message: 'Too many messages sent. Please wait a moment.' }, { status: 429 });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const { success, data: validated, error: validationError } = validate(sendMessageSchema, body);
-    if (!success) return NextResponse.json({ message: validationError }, { status: 400 });
+    const body = await request.json();
+    const validation = chatMessageSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
 
-    const { receiverId, content } = validated;
+    const { receiverId, content } = validation.data;
 
-    // Verify chat roster eligibility
-    if (dbUser.role !== 'ADMIN') {
-      const receiver = await prisma.user.findUnique({
-        where: { id: receiverId },
-        include: { student: true, faculty: true }
-      });
-      if (!receiver) return NextResponse.json({ message: 'Receiver not found' }, { status: 404 });
-
-      let isAllowed = false;
-      if (receiver.role === 'ADMIN') {
-        isAllowed = true;
-      } else if (dbUser.role === 'FACULTY') {
-        const facultyDeptId = dbUser.faculty?.departmentId;
-        if (receiver.role === 'STUDENT' && receiver.student?.departmentId === facultyDeptId) {
-          isAllowed = true;
-        }
-      } else if (dbUser.role === 'STUDENT') {
-        const studentDeptId = dbUser.student?.departmentId;
-        const isCoordinator = dbUser.student?.isCoordinator;
-
-        if (receiver.role === 'FACULTY' && receiver.faculty?.departmentId === studentDeptId) {
-          isAllowed = true;
-        } else if (receiver.role === 'STUDENT' && receiver.student?.isCoordinator) {
-          isAllowed = true;
-        } else if (isCoordinator && receiver.role === 'STUDENT' && receiver.student?.departmentId === studentDeptId) {
-          isAllowed = true;
-        }
-      }
-
-      if (!isAllowed) {
-        return NextResponse.json({ message: 'You are not authorized to message this user' }, { status: 403 });
-      }
+    // Verify receiver exists
+    const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
+    if (!receiver) {
+      return NextResponse.json({ success: false, message: 'Receiver user not found' }, { status: 404 });
     }
 
     const message = await prisma.message.create({
-      data: { senderId: dbUser.id, receiverId, content }
+      data: {
+        senderId: dbUser.id,
+        receiverId,
+        content
+      }
     });
 
-    return NextResponse.json({ message: 'Sent', data: message }, { status: 201 });
+    return NextResponse.json({ success: true, message }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error sending message');
+    console.error('[POST /api/chat]', error);
+    return NextResponse.json({ success: false, message: 'Error sending message' }, { status: 500 });
   }
-});
+}

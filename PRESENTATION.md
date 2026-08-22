@@ -121,21 +121,26 @@ Our platform enforces **strict role account caps** to maintain administrative in
 
 ### 🟢 SLIDE 5: Core System Categories
 
-The system categorizes institutional operations into **4 major pillars**:
+The system categorizes institutional operations into **5 major pillars**:
 
 1. 📅 **Events Schedule & Updates**:
    - Event creation, location, category (Camp, Workshop, Rally, Plantation, Survey).
    - Registrations mapping, photo gallery uploads, and status lifecycle (`UPCOMING`, `ONGOING`, `COMPLETED`).
 
-2. 💰 **Financial Ledger**:
+2. 📝 **Dynamic Custom Forms & Survey Engine**:
+   - Visual drag-and-drop form builder with 18 field types (Text, Dropdown, Checkbox, Rating, Linear Scale, Uploads).
+   - Multi-tier response review (`DRAFT`, `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`) with coordinator notes.
+   - Interactive analytics charts, completion rates, and 1-click `.xlsx` Excel / `.csv` data export.
+
+3. 💰 **Financial Ledger**:
    - Budget allocation, income/sponsorship logging, and expense tracking.
    - Real-time balance calculations: `Remaining Balance = (Budget + Income) - Expenses`.
    - Attachment of receipt file URLs.
 
-3. 📂 **Documentation & Archive Hub**:
+4. 📂 **Documentation & Archive Hub**:
    - Upload & download event summary reports, circular notices, guidelines, and historical archives.
 
-4. 📢 **Circular Broadcasting Engine**:
+5. 📢 **Circular Broadcasting Engine**:
    - Posting a circular notice instantly dispatches broadcast notifications to **each and every active volunteer**.
 
 ---

@@ -1,44 +1,84 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { withAuth, sanitizeErrorResponse } from '@/lib/api-helpers';
+import { getUser } from '@/lib/auth-helpers';
+import { testimonialSchema } from '@/lib/validations';
 
-// GET /api/testimonials — Public: fetch all visible testimonials (or all if ?all=1)
-export async function GET(req) {
+export const dynamic = 'force-dynamic';
+
+// GET /api/testimonials — Retrieve all testimonials (including invisible ones for managers)
+export async function GET(request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const showAll = searchParams.get('all') === '1';
-    const where = showAll ? {} : { isVisible: true };
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
+
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
+    }
+
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
+
+    const where = {};
+    if (!isManager) {
+      where.isVisible = true;
+    }
 
     const testimonials = await prisma.testimonial.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [
+        { sortOrder: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
-    return NextResponse.json({ testimonials }, {
-      status: 200,
-      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120' }
-    });
+
+    return NextResponse.json({ success: true, testimonials });
   } catch (error) {
-    return NextResponse.json({ testimonials: [] }, { status: 200 });
+    console.error('[GET /api/testimonials]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching testimonials' }, { status: 500 });
   }
 }
 
-
-// POST /api/testimonials — Admin only: create a testimonial
-export const POST = withAuth(async (req, { user }) => {
+// POST /api/testimonials — Add testimonial (Admins/Faculty/Coordinators)
+export async function POST(request) {
   try {
-    const { dbUser } = user;
-    if (dbUser.role !== 'ADMIN') {
-      return NextResponse.json({ message: 'Admin only' }, { status: 403 });
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
-    const body = await req.json();
-    const { name, role, dept, quote, avatar, isVisible, sortOrder } = body;
+    const { dbUser } = userContext;
 
-    if (!name || !role || !dept || !quote) {
-      return NextResponse.json({ message: 'name, role, dept, and quote are required' }, { status: 400 });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    // Auto-generate avatar initials if not provided
-    const initials = avatar || name.split(' ').slice(0, 2).map(w => w[0].toUpperCase()).join('');
+    const isCoordinator = dbUser.student?.isCoordinator;
+    const isManager = dbUser.role === 'ADMIN' || dbUser.role === 'FACULTY' || isCoordinator;
+
+    if (!isManager) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const validation = testimonialSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        message: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+      }, { status: 400 });
+    }
+
+    const { name, role, dept, quote, avatar, isVisible, sortOrder } = validation.data;
 
     const testimonial = await prisma.testimonial.create({
       data: {
@@ -46,14 +86,15 @@ export const POST = withAuth(async (req, { user }) => {
         role,
         dept,
         quote,
-        avatar: initials,
-        isVisible: isVisible !== false,
-        sortOrder: sortOrder ?? 0,
+        avatar,
+        isVisible: isVisible !== undefined ? isVisible : true,
+        sortOrder: sortOrder !== undefined ? parseInt(sortOrder) : 0
       }
     });
 
-    return NextResponse.json({ message: 'Testimonial created', testimonial }, { status: 201 });
+    return NextResponse.json({ success: true, message: 'Testimonial created successfully', testimonial }, { status: 201 });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error creating testimonial');
+    console.error('[POST /api/testimonials]', error);
+    return NextResponse.json({ success: false, message: 'Error creating testimonial' }, { status: 500 });
   }
-});
+}

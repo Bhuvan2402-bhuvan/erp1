@@ -1,78 +1,45 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getUser, verifyAccess } from '@/lib/auth-helpers';
-import { sanitizeErrorResponse } from '@/lib/api-helpers';
+import { getUser } from '@/lib/auth-helpers';
 
-// GET /api/chat/contacts — Get chat-eligible users based on role
-export async function GET(req) {
+export const dynamic = 'force-dynamic';
+
+// GET /api/chat/contacts — Fetch potential contacts list (all approved users)
+export async function GET(request) {
   try {
-    const userCtx = await getUser();
-    if (!userCtx || !userCtx.dbUser) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const userContext = await getUser();
+    if (!userContext || !userContext.dbUser) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+    const { dbUser } = userContext;
 
-    const { dbUser } = userCtx;
-    const access = verifyAccess(dbUser);
-    if (!access.authorized) return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
-    let contacts = [];
-
-    const userSelect = {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      avatarUrl: true,
-      department: { select: { name: true, code: true } },
-      student: { select: { isCoordinator: true } }
-    };
-
-    if (dbUser.role === 'ADMIN') {
-      // Admins can see everyone
-      contacts = await prisma.user.findMany({
-        where: { id: { not: dbUser.id } },
-        select: userSelect,
-        orderBy: { name: 'asc' }
-      });
-    } else if (dbUser.role === 'FACULTY') {
-      // Faculty can see students in their department and admins
-      const facultyDeptId = dbUser.faculty?.departmentId;
-      contacts = await prisma.user.findMany({
-        where: {
-          id: { not: dbUser.id },
-          OR: [
-            { role: 'ADMIN' },
-            { student: { departmentId: facultyDeptId } }
-          ]
-        },
-        select: userSelect,
-        orderBy: { name: 'asc' }
-      });
-    } else if (dbUser.role === 'STUDENT') {
-      // Students can see faculty in their department, admins, and coordinators
-      const studentDeptId = dbUser.student?.departmentId;
-      contacts = await prisma.user.findMany({
-        where: {
-          id: { not: dbUser.id },
-          OR: [
-            { role: 'ADMIN' },
-            { faculty: { departmentId: studentDeptId } },
-            { student: { isCoordinator: true } }
-          ]
-        },
-        select: userSelect,
-        orderBy: { name: 'asc' }
-      });
+    // Access protection
+    if (dbUser.isBlocked) {
+      return NextResponse.json({ success: false, message: 'Account is blocked' }, { status: 403 });
+    }
+    if (dbUser.approvalStatus !== 'APPROVED' && dbUser.role !== 'ADMIN') {
+      return NextResponse.json({ success: false, message: 'Account pending approval' }, { status: 403 });
     }
 
-    const formattedContacts = contacts.map(c => ({
-      id: c.id,
-      name: c.name,
-      email: c.email,
-      role: c.student?.isCoordinator ? 'COORDINATOR' : c.role,
-      avatarUrl: c.avatarUrl,
-      dept: c.department?.code || c.department?.name || 'General'
-    }));
+    const contacts = await prisma.user.findMany({
+      where: {
+        approvalStatus: 'APPROVED',
+        isBlocked: false,
+        id: { not: dbUser.id }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatarUrl: true
+      },
+      orderBy: { name: 'asc' }
+    });
 
-    return NextResponse.json({ contacts: formattedContacts }, { status: 200 });
+    return NextResponse.json({ success: true, contacts });
   } catch (error) {
-    return sanitizeErrorResponse(error, 'Error fetching contacts');
+    console.error('[GET /api/chat/contacts]', error);
+    return NextResponse.json({ success: false, message: 'Error fetching contacts' }, { status: 500 });
   }
 }

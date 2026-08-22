@@ -39,6 +39,7 @@ export default async function AdminLayout({ children }) {
     { id: 'testimonials', name: 'Testimonials', href: '/admin/testimonials', basePath: '/admin/testimonials', icon: 'Quote' },
     { id: 'campaign-widget', name: 'Campaign Widget', href: '/admin/campaign-widget', basePath: '/admin/campaign-widget', icon: 'Activity' },
     { id: 'branches', name: 'Branches', href: '/admin/branches', basePath: '/admin/branches', icon: 'BookOpen' },
+    { id: 'forms', name: 'Forms', href: '/admin/forms', basePath: '/admin/forms', icon: 'FileText' },
     { id: 'profile', name: 'Profile', href: '/admin/profile', basePath: '/admin/profile', icon: 'UserCircle' },
   ];
 

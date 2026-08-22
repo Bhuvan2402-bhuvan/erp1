@@ -27,6 +27,13 @@ export default async function FacultyLayout({ children }) {
     { id: 'backup', name: 'Backup Hub', href: '/faculty/backup', basePath: '/faculty/backup', icon: 'Download' },
     { id: 'chat', name: 'Chat', href: '/faculty/chat', basePath: '/faculty/chat', icon: 'MessageSquare' },
     { id: 'announcements', name: 'Announcements', href: '/faculty/announcements', basePath: '/faculty/announcements', icon: 'Megaphone' },
+    // ── Forms ──────────────────────────────────────────────
+    { id: 'forms', name: 'My Forms', href: '/faculty/forms', basePath: '/faculty/forms', icon: 'FileText' },
+    { id: 'forms-create', name: 'Create Form', href: '/faculty/forms/create', basePath: '/faculty/forms/create', icon: 'PlusCircle' },
+    { id: 'forms-drafts', name: 'Drafts', href: '/faculty/forms/drafts', basePath: '/faculty/forms/drafts', icon: 'Inbox' },
+    { id: 'forms-published', name: 'Published', href: '/faculty/forms/published', basePath: '/faculty/forms/published', icon: 'Send' },
+    { id: 'forms-closed', name: 'Closed', href: '/faculty/forms/closed', basePath: '/faculty/forms/closed', icon: 'CheckSquare' },
+    // ───────────────────────────────────────────────────────
     { id: 'profile', name: 'My Profile', href: '/faculty/profile', basePath: '/faculty/profile', icon: 'UserCircle' },
   ];
 

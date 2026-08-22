@@ -3,8 +3,9 @@ import prisma from '@/lib/prisma';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function POST(req) {
+  let body = {};
   try {
-    const body = await req.json().catch(() => ({}));
+    body = await req.json().catch(() => ({}));
     const { accessToken, fallbackEmail } = body;
 
     let uid = null;
@@ -181,7 +182,6 @@ export async function POST(req) {
     return response;
   } catch (error) {
     console.error('Session establishment notice:', error);
-    const body = await req.json().catch(() => ({}));
     const email = body?.fallbackEmail || 'admin1@erp.com';
     const isFaculty = email.includes('faculty');
     const isAdmin = email.includes('admin');

@@ -5,7 +5,8 @@ import Image from 'next/image';
 import {
   LogOut, Menu, X, Download,
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
-  GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity
+  GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity,
+  FileText, ClipboardCheck, PlusCircle, Inbox, CheckSquare, Send, ChevronRight
 } from 'lucide-react';
 import { useSupabase } from '@/lib/supabase/client-provider';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -13,7 +14,8 @@ import { useState, useEffect } from 'react';
 
 const iconMap = {
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
-  GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity
+  GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity,
+  FileText, ClipboardCheck, PlusCircle, Inbox, CheckSquare, Send, ChevronRight, Download
 };
 
 export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, children }) {
