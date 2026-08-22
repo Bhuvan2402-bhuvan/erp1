@@ -100,8 +100,7 @@ function LoginForm() {
       });
 
       if (authErr) {
-        console.warn('Supabase auth notice, falling back to database auth:', authErr.message);
-        await handlePostAuthNavigation(null);
+        setError(authErr.message || 'Invalid email or password.');
         return;
       }
 
@@ -150,6 +149,40 @@ function LoginForm() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-800 py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-100 dark:border-slate-700">
           
+          <div className="mb-6 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">Quick Demo Sign In:</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'admin1@erp.com', password: 'NssErpAdmin#2026!' })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
+              >
+                🔑 Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'faculty1@erp.com', password: 'NssErpFaculty#2026!' })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
+              >
+                🎓 Faculty
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'coord1@erp.com', password: 'NssErpCoord#2026!' })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
+              >
+                ⭐ Coordinator
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ email: 'volunteer1@erp.com', password: 'NssErpVolunteer#2026!' })}
+                className="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-logo-teal transition text-left truncate"
+              >
+                🤝 Volunteer
+              </button>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && <div className="p-3 bg-red-100 text-red-700 rounded text-sm">{error}</div>}
             

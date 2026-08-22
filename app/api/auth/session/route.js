@@ -11,6 +11,9 @@ export async function POST(req) {
     let uid = null;
     let email = null;
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const allowDevFallback = process.env.ALLOW_DEV_AUTH_FALLBACK === 'true';
+
     if (accessToken && accessToken !== 'mock-fallback') {
       try {
         const { data: { user: supabaseUser }, error } = await supabaseAdmin.auth.getUser(accessToken);
@@ -21,16 +24,16 @@ export async function POST(req) {
         email = supabaseUser.email;
       } catch (authErr) {
         console.error('Supabase token verification notice:', authErr);
-        if (fallbackEmail) {
+        if (!isProd && allowDevFallback && fallbackEmail) {
           email = fallbackEmail;
         } else {
           return NextResponse.json({ message: 'Invalid authentication token' }, { status: 401 });
         }
       }
-    } else if (fallbackEmail) {
+    } else if (!isProd && allowDevFallback && fallbackEmail) {
       email = fallbackEmail;
     } else {
-      return NextResponse.json({ message: 'Authentication token required' }, { status: 400 });
+      return NextResponse.json({ message: 'Authentication token required' }, { status: 401 });
     }
 
     if (!email) {
@@ -181,18 +184,7 @@ export async function POST(req) {
 
     return response;
   } catch (error) {
-    console.error('Session establishment notice:', error);
-    const email = body?.fallbackEmail || 'admin1@erp.com';
-    const isFaculty = email.includes('faculty');
-    const isAdmin = email.includes('admin');
-    const role = isAdmin ? 'ADMIN' : isFaculty ? 'FACULTY' : 'STUDENT';
-    const fallbackUid = 'session-fallback-' + Math.random().toString(36).substring(2, 10);
-
-    const response = NextResponse.json({ message: 'Session established successfully' }, { status: 200 });
-    response.cookies.set('x-user-role', role, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 86400 });
-    response.cookies.set('x-user-id', fallbackUid, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 86400 });
-    response.cookies.set('x-user-email', email, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 86400 });
-
-    return response;
+    console.error('Session establishment error:', error);
+    return NextResponse.json({ message: 'Internal server error during authentication' }, { status: 500 });
   }
 }
