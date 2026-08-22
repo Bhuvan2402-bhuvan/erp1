@@ -27,7 +27,66 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed completed: 10 Departments/Branches populated.');
+  // Provision Production Lead Admin Account
+  const adminEmail = 'admin@vvitnss.in';
+  const adminPass = 'AdminNss@2026!';
+  const adminName = 'VVIT NSS Lead Administrator';
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  let uid = null;
+  if (supabaseUrl && supabaseServiceKey && !supabaseServiceKey.includes('placeholder')) {
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+
+      const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email: adminEmail,
+        password: adminPass,
+        email_confirm: true,
+        user_metadata: { name: adminName, role: 'ADMIN' }
+      });
+
+      if (newUser?.user) {
+        uid = newUser.user.id;
+      } else if (createErr) {
+        const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
+        const existing = listData?.users?.find(usr => usr.email === adminEmail);
+        if (existing) {
+          uid = existing.id;
+          await supabaseAdmin.auth.admin.updateUserById(uid, { password: adminPass });
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase admin provisioning notice:', err.message);
+    }
+  }
+
+  if (!uid) uid = 'admin-uid-' + Math.random().toString(36).substring(2, 10);
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      supabaseUid: uid,
+      name: adminName,
+      role: 'ADMIN',
+      approvalStatus: 'APPROVED',
+      isBlocked: false
+    },
+    create: {
+      supabaseUid: uid,
+      email: adminEmail,
+      name: adminName,
+      role: 'ADMIN',
+      approvalStatus: 'APPROVED',
+      isBlocked: false
+    }
+  });
+
+  console.log('✅ Seed completed: 10 Departments and Production Lead Admin Account (admin@vvitnss.in) populated.');
 }
 
 main()

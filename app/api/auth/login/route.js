@@ -27,7 +27,10 @@ export async function POST(req) {
     });
 
     if (authErr || !data?.user || !data?.session) {
-      return NextResponse.json({ message: authErr?.message || 'Invalid email or password' }, { status: 401 });
+      const cleanMessage = authErr?.message?.toLowerCase().includes('fetch')
+        ? 'Invalid email address or password'
+        : (authErr?.message || 'Invalid email address or password');
+      return NextResponse.json({ message: cleanMessage }, { status: 401 });
     }
 
     const supabaseUser = data.user;
