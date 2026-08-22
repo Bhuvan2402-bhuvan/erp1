@@ -50,7 +50,7 @@ export async function GET() {
 
     return NextResponse.json({ departments }, { 
       status: 200,
-      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' }
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     });
   } catch (error) {
     return NextResponse.json({ message: 'Error fetching departments' }, { status: 500 });

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSupabase } from '@/lib/supabase/client-provider';
+import { DEFAULT_DEPARTMENTS } from '@/lib/constants';
 
 export default function Onboarding() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function Onboarding() {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,7 +42,11 @@ export default function Onboarding() {
 
     fetch('/api/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data.departments || []))
+      .then(data => {
+        if (data.departments && data.departments.length > 0) {
+          setDepartments(data.departments);
+        }
+      })
       .catch(err => console.error(err));
   }, [authLoading, user, router]);
 

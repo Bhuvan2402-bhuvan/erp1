@@ -4,6 +4,7 @@ import { validate, signupSchema } from '@/lib/validations';
 import { rateLimit } from '@/lib/rate-limit';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { sendAccountCreatedEmail } from '@/lib/email';
+import { DEFAULT_DEPARTMENTS } from '@/lib/constants';
 
 const signupLimiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterval: 500 });
 
@@ -56,10 +57,30 @@ export async function POST(req) {
       }
     }
 
-    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    let dept = await prisma.department.findFirst({
+      where: {
+        OR: [
+          { id: departmentId },
+          { code: departmentId.toUpperCase() },
+          { name: departmentId }
+        ]
+      }
+    });
+
     if (!dept) {
-      return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
+      const defaultDept = DEFAULT_DEPARTMENTS.find(d => d.id === departmentId || d.code === departmentId.toUpperCase());
+      if (defaultDept) {
+        dept = await prisma.department.upsert({
+          where: { code: defaultDept.code },
+          update: { name: defaultDept.name },
+          create: { name: defaultDept.name, code: defaultDept.code }
+        });
+      } else {
+        return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
+      }
     }
+
+    const resolvedDepartmentId = dept.id;
 
     let supabaseUid = clientSupabaseUid;
     if (!supabaseUid) {
@@ -89,7 +110,7 @@ export async function POST(req) {
           name,
           role,
           approvalStatus: 'PENDING',
-          departmentId
+          departmentId: resolvedDepartmentId
         }
       });
 
@@ -101,7 +122,7 @@ export async function POST(req) {
             year: parseInt(year),
             section,
             semester: parseInt(semester || 1),
-            departmentId
+            departmentId: resolvedDepartmentId
           }
         });
       } else if (role === 'FACULTY') {
@@ -110,7 +131,7 @@ export async function POST(req) {
             userId: newUser.id,
             employeeId,
             designation,
-            departmentId
+            departmentId: resolvedDepartmentId
           }
         });
       }

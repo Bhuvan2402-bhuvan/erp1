@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSupabase } from '@/lib/supabase/client-provider';
+import { DEFAULT_DEPARTMENTS } from '@/lib/constants';
 
 export default function Signup() {
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function Signup() {
     designation: ''
   });
 
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState('details'); // 'details' | 'confirmation'
@@ -33,7 +34,11 @@ export default function Signup() {
   useEffect(() => {
     fetch('/api/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data.departments || []))
+      .then(data => {
+        if (data.departments && data.departments.length > 0) {
+          setDepartments(data.departments);
+        }
+      })
       .catch(err => console.error(err));
   }, []);
 

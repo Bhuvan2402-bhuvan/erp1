@@ -4,6 +4,7 @@ import { getUser } from '@/lib/auth-helpers';
 import { validate, onboardingSchema } from '@/lib/validations';
 import { sendAccountCreatedEmail } from '@/lib/email';
 import { headers, cookies } from 'next/headers';
+import { DEFAULT_DEPARTMENTS } from '@/lib/constants';
 
 export async function POST(req) {
   try {
@@ -84,11 +85,30 @@ export async function POST(req) {
       }
     }
 
-    // Verify department exists
-    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
+    let dept = await prisma.department.findFirst({
+      where: {
+        OR: [
+          { id: departmentId },
+          { code: departmentId.toUpperCase() },
+          { name: departmentId }
+        ]
+      }
+    });
+
     if (!dept) {
-      return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
+      const defaultDept = DEFAULT_DEPARTMENTS.find(d => d.id === departmentId || d.code === departmentId.toUpperCase());
+      if (defaultDept) {
+        dept = await prisma.department.upsert({
+          where: { code: defaultDept.code },
+          update: { name: defaultDept.name },
+          create: { name: defaultDept.name, code: defaultDept.code }
+        });
+      } else {
+        return NextResponse.json({ message: 'Selected department does not exist' }, { status: 400 });
+      }
     }
+
+    const resolvedDepartmentId = dept.id;
 
     const userName = bodyName || dbUser?.name || email.split('@')[0].toUpperCase();
 
@@ -101,7 +121,7 @@ export async function POST(req) {
             name: userName,
             role,
             approvalStatus: 'PENDING',
-            departmentId
+            departmentId: resolvedDepartmentId
           }
         });
       } else {
@@ -109,7 +129,7 @@ export async function POST(req) {
           where: { id: dbUser.id },
           data: {
             role,
-            departmentId,
+            departmentId: resolvedDepartmentId,
             ...(userName ? { name: userName } : {})
           }
         });
@@ -118,14 +138,14 @@ export async function POST(req) {
       if (role === 'STUDENT') {
         await tx.student.upsert({
           where: { userId: dbUser.id },
-          update: { rollNo, year: parseInt(year), section, semester: parseInt(semester || 1), departmentId },
-          create: { userId: dbUser.id, rollNo, year: parseInt(year), section, semester: parseInt(semester || 1), departmentId }
+          update: { rollNo, year: parseInt(year), section, semester: parseInt(semester || 1), departmentId: resolvedDepartmentId },
+          create: { userId: dbUser.id, rollNo, year: parseInt(year), section, semester: parseInt(semester || 1), departmentId: resolvedDepartmentId }
         });
       } else if (role === 'FACULTY') {
         await tx.faculty.upsert({
           where: { userId: dbUser.id },
-          update: { employeeId, designation, departmentId },
-          create: { userId: dbUser.id, employeeId, designation, departmentId }
+          update: { employeeId, designation, departmentId: resolvedDepartmentId },
+          create: { userId: dbUser.id, employeeId, designation, departmentId: resolvedDepartmentId }
         });
       }
     });
