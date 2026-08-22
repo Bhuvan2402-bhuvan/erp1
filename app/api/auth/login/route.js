@@ -8,7 +8,7 @@ const loginLimiter = rateLimit({ interval: 15 * 60 * 1000, uniqueTokenPerInterva
 
 export async function POST(req) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const { success: withinLimit } = loginLimiter.check(30, `login:${ip}`);
+  const { success: withinLimit } = loginLimiter.check(50, `login:${ip}`);
   if (!withinLimit) {
     return NextResponse.json({ message: 'Too many login attempts. Please try again later.' }, { status: 429 });
   }
@@ -21,22 +21,27 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = String(email).trim().toLowerCase();
 
-    // 1. Fetch Prisma User record
-    let dbUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: cleanEmail },
-          { email: email.trim() }
-        ]
-      },
-      include: {
-        department: true,
-        student: { include: { department: true } },
-        faculty: { include: { department: true } }
-      }
-    });
+    // 1. Fetch Prisma User record safely
+    let dbUser = null;
+    try {
+      dbUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            { email: String(email).trim() }
+          ]
+        },
+        include: {
+          department: true,
+          student: { include: { department: true } },
+          faculty: { include: { department: true } }
+        }
+      });
+    } catch (dbErr) {
+      console.error('Database user fetch notice:', dbErr);
+    }
 
     if (dbUser) {
       if (dbUser.isBlocked) {
@@ -49,16 +54,16 @@ export async function POST(req) {
     }
 
     // 2. Try authenticating with Supabase Auth using ANON client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tfscwjipnqzuoicounex.supabase.co';
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZQ8G6A5N06wvyECl9nIcmA_uV2rum_u';
-    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
-    });
-
     let authenticatedSupabaseUser = null;
     let accessToken = null;
 
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tfscwjipnqzuoicounex.supabase.co';
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_ZQ8G6A5N06wvyECl9nIcmA_uV2rum_u';
+      const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+
       const { data: authData } = await anonClient.auth.signInWithPassword({
         email: cleanEmail,
         password
@@ -72,11 +77,11 @@ export async function POST(req) {
       console.warn('Anon auth notice:', anonErr.message);
     }
 
-    // 3. If Supabase auth didn't return a session but user exists in DB, ensure Supabase user exists & sync
+    // 3. Admin sync fallback for registered DB users
     if (!authenticatedSupabaseUser && dbUser && supabaseAdmin) {
       try {
         const { data: listData } = await supabaseAdmin.auth.admin.listUsers();
-        const existing = listData?.users?.find(usr => usr.email.toLowerCase() === cleanEmail);
+        const existing = listData?.users?.find(usr => usr?.email && usr.email.toLowerCase() === cleanEmail);
         if (existing) {
           await supabaseAdmin.auth.admin.updateUserById(existing.id, { password });
           authenticatedSupabaseUser = existing;
@@ -173,6 +178,6 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('Server login error:', error);
-    return NextResponse.json({ message: 'An internal error occurred during login' }, { status: 500 });
+    return NextResponse.json({ message: 'Invalid email address or password' }, { status: 401 });
   }
 }
