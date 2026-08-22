@@ -8,9 +8,17 @@ export default function AdminFormsPage() {
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [deptFilter, setDeptFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/departments').then(r => r.json()).then(d => {
+      if (d.departments) setDepartments(d.departments);
+    }).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -18,6 +26,7 @@ export default function AdminFormsPage() {
       const params = new URLSearchParams({
         page, limit: 20,
         ...(search ? { search } : {}),
+        ...(deptFilter ? { departmentId: deptFilter } : {}),
         ...(statusFilter ? { status: statusFilter } : {}),
       });
       const res = await fetch(`/api/forms?${params}`);
@@ -25,7 +34,7 @@ export default function AdminFormsPage() {
       if (res.ok) { setForms(data.forms); setPagination(data.pagination); }
     } catch {}
     setLoading(false);
-  }, [page, search, statusFilter]);
+  }, [page, search, deptFilter, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -49,6 +58,13 @@ export default function AdminFormsPage() {
             placeholder="Search forms…"
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-logo-teal/40 outline-none" />
         </div>
+        <select value={deptFilter} onChange={e => { setDeptFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-logo-teal/40 outline-none">
+          <option value="">All Departments</option>
+          {departments.map(d => (
+            <option key={d.id} value={d.id}>{d.name} ({d.code})</option>
+          ))}
+        </select>
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
           className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-logo-teal/40 outline-none">
           <option value="">All Statuses</option>

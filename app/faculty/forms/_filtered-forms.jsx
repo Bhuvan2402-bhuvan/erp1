@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import FormCard from '@/components/forms/FormCard';
+import FormsHeaderTabs from '@/components/forms/FormsHeaderTabs';
 import { FileText, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,20 +31,17 @@ function FilteredFormsPage({ status, title, description, emptyMsg, badge }) {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            {title}
-            <span className={`text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wide ${badge}`}>
-              {forms.length}
-            </span>
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
-        </div>
-        <button onClick={load} disabled={loading} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          {title}
+          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide ${badge}`}>
+            {forms.length}
+          </span>
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
       </div>
+
+      <FormsHeaderTabs />
 
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">

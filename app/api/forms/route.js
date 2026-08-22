@@ -31,6 +31,7 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const deptFilter = searchParams.get('departmentId');
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')));
     const skip = (page - 1) * limit;
@@ -39,12 +40,15 @@ export async function GET(request) {
     let where = {};
 
     if (dbUser.role === 'ADMIN') {
-      // Admin sees everything
+      // Admin sees everything (or filtered by departmentId if supplied)
+      if (deptFilter) where.departmentId = deptFilter;
       if (status) where.status = status;
     } else if (canManageForms(dbUser)) {
       // Faculty/Coordinator see their dept forms
       const deptId = getUserDeptId(dbUser);
-      where.departmentId = deptId;
+      if (deptId) {
+        where.departmentId = deptId;
+      }
       if (status) where.status = status;
     } else {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
@@ -66,6 +70,7 @@ export async function GET(request) {
         include: {
           department: { select: { id: true, name: true, code: true } },
           createdBy: { select: { id: true, name: true, email: true } },
+          access: { include: { department: { select: { id: true, name: true, code: true } } } },
           _count: { select: { fields: { where: { isDeleted: false } }, responses: true } },
         },
       }),
@@ -100,21 +105,20 @@ export async function POST(request) {
     const { title, description, category, coverImageUrl, instructions, visibility,
       startsAt, endsAt, allowMultipleSubmissions, allowEditing, allowDraft,
       anonymous, maxResponses, requireAuth, confirmationMessage,
-      notifyOnSubmission, notifyOnReview } = body;
+      notifyOnSubmission, notifyOnReview, selectedDepartmentIds, selectedUserIds } = body;
 
     if (!title?.trim()) return NextResponse.json({ message: 'Title is required' }, { status: 400 });
 
     // Determine department
     let departmentId = body.departmentId;
     if (dbUser.role !== 'ADMIN') {
-      // Non-admins cannot choose a different department
-      departmentId = getUserDeptId(dbUser);
+      departmentId = getUserDeptId(dbUser) || dbUser.departmentId;
+    }
+    if (!departmentId) {
+      const fallbackDept = await prisma.department.findFirst().catch(() => null);
+      departmentId = fallbackDept?.id;
     }
     if (!departmentId) return NextResponse.json({ message: 'Department not found for user' }, { status: 400 });
-
-    // Verify dept exists
-    const dept = await prisma.department.findUnique({ where: { id: departmentId } });
-    if (!dept) return NextResponse.json({ message: 'Department not found' }, { status: 404 });
 
     const form = await prisma.form.create({
       data: {
@@ -145,10 +149,29 @@ export async function POST(request) {
       },
     });
 
+    // Handle FormAccess for selected departments or selected users
+    if (visibility === 'SELECTED_DEPARTMENTS' && Array.isArray(selectedDepartmentIds) && selectedDepartmentIds.length > 0) {
+      await prisma.formAccess.createMany({
+        data: selectedDepartmentIds.map(dId => ({
+          formId: form.id,
+          departmentId: dId,
+          accessType: 'view'
+        }))
+      }).catch(() => {});
+    } else if (visibility === 'SELECTED_USERS' && Array.isArray(selectedUserIds) && selectedUserIds.length > 0) {
+      await prisma.formAccess.createMany({
+        data: selectedUserIds.map(uId => ({
+          formId: form.id,
+          userId: uId,
+          accessType: 'view'
+        }))
+      }).catch(() => {});
+    }
+
     // Audit log
     await prisma.formAuditLog.create({
       data: { formId: form.id, userId: dbUser.id, action: 'form_created', metadata: { title: form.title } },
-    }).catch(() => {}); // non-critical
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, form }, { status: 201 });
   } catch (error) {
@@ -156,3 +179,4 @@ export async function POST(request) {
     return NextResponse.json({ message: 'Error creating form' }, { status: 500 });
   }
 }
+

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Plus, Search, RefreshCw, FileText } from 'lucide-react';
 import Link from 'next/link';
 import FormCard from '@/components/forms/FormCard';
+import FormsHeaderTabs from '@/components/forms/FormsHeaderTabs';
 
 export default function FacultyFormsPage() {
   const pathname = usePathname();
@@ -34,16 +35,12 @@ export default function FacultyFormsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Forms</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Forms for your department</p>
-        </div>
-        <Link href={`${baseHref}/create`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-logo-teal text-white rounded-xl text-sm font-semibold hover:opacity-90 transition shadow-sm">
-          <Plus className="w-4 h-4" /> Create Form
-        </Link>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Forms Directory</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage and organize all department forms and assignments</p>
       </div>
+
+      <FormsHeaderTabs />
 
       <div className="flex gap-3">
         <div className="relative flex-1">

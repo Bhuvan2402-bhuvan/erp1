@@ -6,7 +6,7 @@ import { validate, createDepartmentSchema } from '@/lib/validations';
 // GET /api/departments — Public list (used by signup/onboarding)
 export async function GET() {
   try {
-    const departments = await prisma.department.findMany({
+    let departments = await prisma.department.findMany({
       include: {
         _count: {
           select: { students: true, faculty: true }
@@ -15,6 +15,39 @@ export async function GET() {
       orderBy: { name: 'asc' }
     });
     
+    // Auto-seed default departments if table is empty
+    if (departments.length === 0) {
+      const defaultDepartments = [
+        { name: 'B.Tech - Computer Science and Engineering', code: 'CSE' },
+        { name: 'B.Tech - CSE (Artificial Intelligence and Machine Learning)', code: 'CSE-AIML' },
+        { name: 'B.Tech - CSE (Artificial Intelligence and Data Science)', code: 'CSE-AIDS' },
+        { name: 'B.Tech - CSE (IoT and Cyber Security including Block Chain Technology)', code: 'CSE-IOT' },
+        { name: 'B.Tech - Electronics and Communication Engineering', code: 'ECE' },
+        { name: 'B.Tech - Electrical and Electronics Engineering', code: 'EEE' },
+        { name: 'B.Tech - Mechanical Engineering', code: 'MECH' },
+        { name: 'B.Tech - Civil Engineering', code: 'CIVIL' },
+        { name: 'BBA', code: 'BBA' },
+        { name: 'MBA', code: 'MBA' }
+      ];
+
+      for (const dept of defaultDepartments) {
+        await prisma.department.upsert({
+          where: { code: dept.code },
+          update: { name: dept.name },
+          create: dept
+        });
+      }
+
+      departments = await prisma.department.findMany({
+        include: {
+          _count: {
+            select: { students: true, faculty: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      });
+    }
+
     return NextResponse.json({ departments }, { 
       status: 200,
       headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' }

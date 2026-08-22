@@ -554,7 +554,7 @@ export default function ProfileTab({ user, onUpdate }) {
               {roleKey === 'STUDENT' && (
                 <>
                   <InfoRow icon={Hash} label="Roll Number" value={user?.student?.rollNo} />
-                  <InfoRow icon={BookOpen} label="Department" value={user?.student?.department?.name} />
+                  <InfoRow icon={BookOpen} label="Department" value={user?.student?.department?.name || user?.department?.name} />
                   <InfoRow
                     icon={Building2}
                     label="Year / Section"
@@ -572,7 +572,7 @@ export default function ProfileTab({ user, onUpdate }) {
               {roleKey === 'FACULTY' && (
                 <>
                   <InfoRow icon={Hash} label="Employee ID" value={user?.faculty?.employeeId} />
-                  <InfoRow icon={BookOpen} label="Assigned Branch" value={user?.faculty?.department?.name} />
+                  <InfoRow icon={BookOpen} label="Assigned Branch" value={user?.faculty?.department?.name || user?.department?.name} />
                 </>
               )}
               {roleKey === 'ADMIN' && (

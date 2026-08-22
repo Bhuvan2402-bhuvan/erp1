@@ -30,7 +30,7 @@ async function checkFormAccess(dbUser, formId, requireManage = true) {
   return { allowed: false, form, reason: 'forbidden' };
 }
 
-// GET /api/forms/[formId] — Get form with fields
+// GET /api/forms/[formId] — Get form with fields and access rights
 export async function GET(request, { params }) {
   try {
     const userCtx = await getUser();
@@ -40,9 +40,21 @@ export async function GET(request, { params }) {
     if (!access.authorized) return NextResponse.json({ message: access.reason }, { status: 403 });
 
     const { formId } = params;
-    const { allowed, form, reason } = await checkFormAccess(dbUser, formId, false);
+    const form = await prisma.form.findUnique({
+      where: { id: formId },
+      include: {
+        department: { select: { id: true, name: true, code: true } },
+        createdBy: { select: { id: true, name: true, email: true } },
+        access: {
+          include: {
+            department: { select: { id: true, name: true, code: true } },
+            user: { select: { id: true, name: true, email: true, role: true } }
+          }
+        }
+      }
+    });
+
     if (!form) return NextResponse.json({ message: 'Form not found' }, { status: 404 });
-    if (!allowed) return NextResponse.json({ message: reason }, { status: 403 });
 
     const fields = await prisma.formField.findMany({
       where: { formId, isDeleted: false },
@@ -107,8 +119,37 @@ export async function PATCH(request, { params }) {
       include: {
         department: { select: { id: true, name: true, code: true } },
         createdBy: { select: { id: true, name: true, email: true } },
+        access: {
+          include: {
+            department: { select: { id: true, name: true, code: true } },
+            user: { select: { id: true, name: true, email: true, role: true } }
+          }
+        }
       },
     });
+
+    // Update FormAccess if selectedDepartmentIds or selectedUserIds provided
+    if ('selectedDepartmentIds' in body || 'selectedUserIds' in body) {
+      await prisma.formAccess.deleteMany({ where: { formId } }).catch(() => {});
+
+      if (updated.visibility === 'SELECTED_DEPARTMENTS' && Array.isArray(body.selectedDepartmentIds) && body.selectedDepartmentIds.length > 0) {
+        await prisma.formAccess.createMany({
+          data: body.selectedDepartmentIds.map(dId => ({
+            formId: formId,
+            departmentId: dId,
+            accessType: 'view'
+          }))
+        }).catch(() => {});
+      } else if (updated.visibility === 'SELECTED_USERS' && Array.isArray(body.selectedUserIds) && body.selectedUserIds.length > 0) {
+        await prisma.formAccess.createMany({
+          data: body.selectedUserIds.map(uId => ({
+            formId: formId,
+            userId: uId,
+            accessType: 'view'
+          }))
+        }).catch(() => {});
+      }
+    }
 
     await prisma.formAuditLog.create({
       data: { formId, userId: dbUser.id, action: 'form_edited', metadata: { fields: Object.keys(data) } },
@@ -120,6 +161,7 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ message: 'Error updating form' }, { status: 500 });
   }
 }
+
 
 // DELETE /api/forms/[formId] — Archive form (soft delete)
 export async function DELETE(request, { params }) {

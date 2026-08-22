@@ -44,6 +44,12 @@ export default function Signup() {
     setLoading(true);
     setError('');
 
+    if (!formData.departmentId) {
+      setError('Please select your department');
+      setLoading(false);
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
@@ -179,7 +185,7 @@ export default function Signup() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Department</label>
                 <div className="mt-1">
-                  <select name="departmentId" required onChange={handleChange} className={inputClass}>
+                  <select name="departmentId" value={formData.departmentId} required onChange={handleChange} className={inputClass}>
                     <option value="">Select Department</option>
                     {departments.map(d => (
                       <option key={d.id} value={d.id}>{d.name} ({d.code})</option>

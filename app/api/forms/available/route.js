@@ -19,7 +19,9 @@ export async function GET(request) {
     const skip = (page - 1) * limit;
     const search = searchParams.get('search') || '';
 
-    const studentDeptId = dbUser.student?.departmentId;
+    const userRole = dbUser.role; // ADMIN | FACULTY | STUDENT
+    const isCoordinator = userRole === 'STUDENT' && !!dbUser.student?.isCoordinator;
+    const userDeptId = dbUser.faculty?.departmentId || dbUser.student?.departmentId || dbUser.departmentId;
 
     // Auto-close forms past deadline
     await prisma.form.updateMany({
@@ -27,21 +29,56 @@ export async function GET(request) {
       data: { status: 'CLOSED' },
     }).catch(() => {});
 
-    // Build eligibility filter
-    const visibilityFilter = [
-      { visibility: 'ALL_VOLUNTEERS' },
-    ];
-    if (studentDeptId) {
-      visibilityFilter.push({ visibility: 'DEPARTMENT_ONLY', departmentId: studentDeptId });
+    // Build role & department eligibility filter
+    const visibilityFilter = [];
+
+    if (userRole === 'ADMIN') {
+      // Admin can see/access any published form
+      visibilityFilter.push(
+        { visibility: 'ALL_VOLUNTEERS' },
+        { visibility: 'ADMIN_ONLY' },
+        { visibility: 'FACULTY_ONLY' },
+        { visibility: 'COORDINATORS_ONLY' },
+        { visibility: 'INTERNAL_DEPT' },
+        { visibility: 'DEPARTMENT_ONLY' },
+        { visibility: 'SELECTED_DEPARTMENTS' },
+        { visibility: 'SELECTED_USERS' }
+      );
+    } else {
+      // 1. All Volunteers forms (global)
+      visibilityFilter.push({ visibility: 'ALL_VOLUNTEERS' });
+
+      // 2. Department-wide forms
+      if (userDeptId) {
+        visibilityFilter.push({ visibility: 'DEPARTMENT_ONLY', departmentId: userDeptId });
+        visibilityFilter.push({
+          visibility: 'SELECTED_DEPARTMENTS',
+          access: { some: { departmentId: userDeptId } },
+        });
+      }
+
+      // 3. Faculty-only forms
+      if (userRole === 'FACULTY') {
+        visibilityFilter.push({ visibility: 'FACULTY_ONLY' });
+        if (userDeptId) {
+          visibilityFilter.push({ visibility: 'INTERNAL_DEPT', departmentId: userDeptId });
+        }
+      }
+
+      // 4. Student Coordinator forms
+      if (isCoordinator) {
+        visibilityFilter.push({ visibility: 'COORDINATORS_ONLY' });
+        if (userDeptId) {
+          visibilityFilter.push({ visibility: 'INTERNAL_DEPT', departmentId: userDeptId });
+        }
+      }
+
+      // 5. Explicitly targeted user forms
       visibilityFilter.push({
-        visibility: 'SELECTED_DEPARTMENTS',
-        access: { some: { departmentId: studentDeptId } },
+        visibility: 'SELECTED_USERS',
+        access: { some: { userId: dbUser.id } },
       });
     }
-    visibilityFilter.push({
-      visibility: 'SELECTED_USERS',
-      access: { some: { userId: dbUser.id } },
-    });
 
     const baseWhere = {
       status: 'PUBLISHED',

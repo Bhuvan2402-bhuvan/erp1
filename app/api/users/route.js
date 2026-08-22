@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 // GET /api/users — Query users list
 export async function GET(request) {
   try {
-    const roleCheck = await requireRole(['ADMIN', 'FACULTY']);
+    const roleCheck = await requireRole(['ADMIN', 'FACULTY', 'STUDENT']);
     if (!roleCheck.authorized) {
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: roleCheck.reason === 'unauthenticated' ? 401 : 403 });
     }

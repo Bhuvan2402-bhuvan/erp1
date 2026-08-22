@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ClipboardCheck, RefreshCw, Eye, Edit3 } from 'lucide-react';
 import SubmissionStatusBadge from '@/components/forms/SubmissionStatusBadge';
+import FormsHeaderTabs from '@/components/forms/FormsHeaderTabs';
 
 export default function MySubmissionsPage() {
   const [responses, setResponses] = useState([]);
@@ -24,15 +25,12 @@ export default function MySubmissionsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Submissions</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track the status of your form submissions</p>
-        </div>
-        <button onClick={load} disabled={loading} className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition disabled:opacity-50">
-          <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Submissions</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track the status of your submitted responses and drafts</p>
       </div>
+
+      <FormsHeaderTabs canCreate={false} />
 
       {loading ? (
         <div className="space-y-3 animate-pulse">

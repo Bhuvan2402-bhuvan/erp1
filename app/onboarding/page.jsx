@@ -52,6 +52,12 @@ export default function Onboarding() {
     setLoading(true);
     setError('');
 
+    if (!formData.departmentId) {
+      setError('Please select your department / branch');
+      setLoading(false);
+      return;
+    }
+
     try {
       const payload = { ...formData, role };
       const res = await fetch('/api/auth/onboarding', {
@@ -136,7 +142,7 @@ export default function Onboarding() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Branch / Department</label>
                 <div className="mt-1">
-                  <select name="departmentId" required onChange={handleChange} className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-logo-teal focus:border-logo-teal sm:text-sm dark:bg-slate-700 dark:text-white">
+                  <select name="departmentId" value={formData.departmentId} required onChange={handleChange} className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm focus:outline-none focus:ring-logo-teal focus:border-logo-teal sm:text-sm dark:bg-slate-700 dark:text-white">
                     <option value="">Select Branch</option>
                     {departments.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>

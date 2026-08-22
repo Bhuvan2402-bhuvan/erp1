@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, RefreshCw, FileText } from 'lucide-react';
 import FormCard from '@/components/forms/FormCard';
+import FormsHeaderTabs from '@/components/forms/FormsHeaderTabs';
 
 export default function AvailableFormsPage() {
   const [forms, setForms] = useState([]);
@@ -27,8 +28,10 @@ export default function AvailableFormsPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Available Forms</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Forms you can fill in for your department</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Forms assigned to you or open for your department</p>
       </div>
+
+      <FormsHeaderTabs canCreate={false} />
 
       <div className="flex gap-3">
         <div className="relative flex-1">

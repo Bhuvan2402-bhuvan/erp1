@@ -20,6 +20,17 @@ export default function FormCard({ form, variant = 'student', baseHref }) {
     ? deadline.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'No deadline';
 
+  const visibilityLabels = {
+    DEPARTMENT_ONLY: 'Dept Volunteers',
+    ALL_VOLUNTEERS: 'All Volunteers',
+    INTERNAL_DEPT: 'Internal Dept',
+    FACULTY_ONLY: 'Faculty Only',
+    COORDINATORS_ONLY: 'Coordinators Only',
+    ADMIN_ONLY: 'Admins Only',
+    SELECTED_DEPARTMENTS: 'Selected Depts',
+    SELECTED_USERS: 'Selected Users',
+  };
+
   if (variant === 'student') {
     const canFill = form.status === 'PUBLISHED' && !isExpired && !myResponse;
     const canView = !!myResponse && myResponse.status !== 'DRAFT';
@@ -41,8 +52,10 @@ export default function FormCard({ form, variant = 'student', baseHref }) {
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-slate-900 dark:text-white text-base truncate">{form.title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {form.department?.code} • Posted by {form.createdBy?.name}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">{form.department?.code || 'GEN'}</span>
+                <span>•</span>
+                <span>{visibilityLabels[form.visibility] || form.visibility}</span>
               </p>
             </div>
             <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[form.status] || STATUS_COLORS.DRAFT}`}>
@@ -119,8 +132,12 @@ export default function FormCard({ form, variant = 'student', baseHref }) {
         <div className="flex items-start justify-between gap-3 mb-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-slate-900 dark:text-white truncate">{form.title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {form.department?.code} · {form.category}
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">{form.department?.code || 'GEN'}</span>
+              <span>·</span>
+              <span className="text-logo-teal font-medium">{visibilityLabels[form.visibility] || form.visibility}</span>
+              <span>·</span>
+              <span>{form.category}</span>
             </p>
           </div>
           <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${STATUS_COLORS[form.status] || STATUS_COLORS.DRAFT}`}>

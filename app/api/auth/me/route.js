@@ -36,7 +36,7 @@ export async function GET() {
             ...(cleanEmail ? [{ email: cleanEmail }] : [])
           ]
         },
-        include: { department: true, student: true, faculty: true }
+        include: { department: true, student: { include: { department: true } }, faculty: { include: { department: true } } }
       }).catch(() => null);
 
       if (!dbUser) {
