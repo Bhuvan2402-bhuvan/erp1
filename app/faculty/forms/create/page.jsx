@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Save, Globe, Settings, Eye, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -21,6 +21,13 @@ function Tab({ active, onClick, label }) {
 
 export default function CreateFormPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const baseHref = pathname.startsWith('/admin/forms')
+    ? '/admin/forms'
+    : pathname.startsWith('/student/forms')
+    ? '/student/forms'
+    : '/faculty/forms';
+
   const [tab, setTab] = useState('basic');
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -85,7 +92,7 @@ export default function CreateFormPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       toast.success('Form published! Students can now fill it.');
-      router.push('/faculty/forms/published');
+      router.push(`${baseHref}/published`);
     } catch (e) {
       toast.error(e.message || 'Failed to publish');
     } finally {
@@ -102,7 +109,7 @@ export default function CreateFormPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/faculty/forms" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition">
+          <Link href={baseHref} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>

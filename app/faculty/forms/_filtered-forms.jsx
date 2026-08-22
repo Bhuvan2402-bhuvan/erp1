@@ -1,10 +1,18 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import FormCard from '@/components/forms/FormCard';
 import { FileText, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 function FilteredFormsPage({ status, title, description, emptyMsg, badge }) {
+  const pathname = usePathname();
+  const baseHref = pathname.startsWith('/admin/forms')
+    ? '/admin/forms'
+    : pathname.startsWith('/student/forms')
+    ? '/student/forms'
+    : '/faculty/forms';
+
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +57,7 @@ function FilteredFormsPage({ status, title, description, emptyMsg, badge }) {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {forms.map(form => (
-            <FormCard key={form.id} form={form} variant="faculty" baseHref="/faculty/forms" />
+            <FormCard key={form.id} form={form} variant="faculty" baseHref={baseHref} />
           ))}
         </div>
       )}

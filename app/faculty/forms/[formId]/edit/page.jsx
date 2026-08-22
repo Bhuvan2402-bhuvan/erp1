@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import { ArrowLeft, Globe, Lock, Archive, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -11,6 +11,13 @@ const TABS = ['basic', 'fields', 'settings'];
 export default function EditFormPage() {
   const { formId } = useParams();
   const router = useRouter();
+  const pathname = usePathname();
+  const baseHref = pathname.startsWith('/admin/forms')
+    ? '/admin/forms'
+    : pathname.startsWith('/student/forms')
+    ? '/student/forms'
+    : '/faculty/forms';
+
   const [tab, setTab] = useState('fields');
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +74,7 @@ export default function EditFormPage() {
       const res = await fetch(`/api/forms/${formId}/publish`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).message);
       toast.success('Form published!');
-      router.push('/faculty/forms/published');
+      router.push(`${baseHref}/published`);
     } catch (e) { toast.error(e.message || 'Failed to publish'); }
     finally { setPublishing(false); }
   };
@@ -79,7 +86,7 @@ export default function EditFormPage() {
       const res = await fetch(`/api/forms/${formId}/close`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).message);
       toast.success('Form closed');
-      router.push('/faculty/forms/closed');
+      router.push(`${baseHref}/closed`);
     } catch (e) { toast.error(e.message || 'Failed to close'); }
     finally { setClosing(false); }
   };
@@ -91,7 +98,7 @@ export default function EditFormPage() {
       const res = await fetch(`/api/forms/${formId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).message);
       toast.success('Form archived');
-      router.push('/faculty/forms');
+      router.push(baseHref);
     } catch (e) { toast.error(e.message || 'Failed to archive'); }
     finally { setArchiving(false); }
   };
@@ -106,7 +113,7 @@ export default function EditFormPage() {
   if (!form) return (
     <div className="max-w-4xl mx-auto py-20 text-center text-slate-400">
       <p>Form not found or you don&apos;t have access to it.</p>
-      <Link href="/faculty/forms" className="text-logo-teal mt-2 inline-block">Back to forms</Link>
+      <Link href={baseHref} className="text-logo-teal mt-2 inline-block">Back to forms</Link>
     </div>
   );
 
@@ -118,7 +125,7 @@ export default function EditFormPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          <Link href="/faculty/forms" className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition">
+          <Link href={baseHref} className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
@@ -145,11 +152,11 @@ export default function EditFormPage() {
               {archiving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />} Archive
             </button>
           )}
-          <Link href={`/faculty/forms/${formId}/responses`}
+          <Link href={`${baseHref}/${formId}/responses`}
             className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
             Responses
           </Link>
-          <Link href={`/faculty/forms/${formId}/analytics`}
+          <Link href={`${baseHref}/${formId}/analytics`}
             className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
             Analytics
           </Link>

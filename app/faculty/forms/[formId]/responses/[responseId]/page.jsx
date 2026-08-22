@@ -1,11 +1,18 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import ResponseDetailView from '@/components/forms/ResponseDetailView';
 
 export default function ResponseDetailPage() {
   const { formId, responseId } = useParams();
+  const pathname = usePathname();
+  const baseHref = pathname.startsWith('/admin/forms')
+    ? '/admin/forms'
+    : pathname.startsWith('/student/forms')
+    ? '/student/forms'
+    : '/faculty/forms';
+
   const [form, setForm] = useState(null);
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +44,7 @@ export default function ResponseDetailPage() {
       response={response}
       form={{ ...form, fields: form.fields || [] }}
       canReview={true}
-      backHref={`/faculty/forms/${formId}/responses`}
+      backHref={`${baseHref}/${formId}/responses`}
     />
   );
 }
