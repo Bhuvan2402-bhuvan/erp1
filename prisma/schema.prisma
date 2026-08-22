@@ -68,7 +68,7 @@ enum EventStatus {
 
 model User {
   id              String         @id @default(uuid())
-  supabaseUid     String         @unique
+  supabaseUid     String?        @unique @map("supabaseAuthId")
   email           String         @unique
   name            String
   phone           String?

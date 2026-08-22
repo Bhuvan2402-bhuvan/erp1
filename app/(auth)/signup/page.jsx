@@ -71,7 +71,7 @@ export default function Signup() {
       }
 
       // 2. Register in Database via API
-      const payload = { ...formData, role, firebaseUid: supabaseUid };
+      const payload = { ...formData, role, supabaseUid };
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

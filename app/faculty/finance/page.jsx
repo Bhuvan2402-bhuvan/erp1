@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, Wallet, FileText, Building2, Filter } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ export default function FinancePage() {
   const [departmentId, setDepartmentId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const loadFinance = (deptFilter = selectedBranch) => {
+  const loadFinance = useCallback((deptFilter = selectedBranch) => {
     setLoading(true);
     const url = deptFilter ? `/api/finance?departmentId=${encodeURIComponent(deptFilter)}` : '/api/finance';
     fetch(url)
@@ -34,11 +34,11 @@ export default function FinancePage() {
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  };
+  }, [selectedBranch]);
 
   useEffect(() => {
     loadFinance(selectedBranch);
-  }, [selectedBranch]);
+  }, [loadFinance, selectedBranch]);
 
   const handleCreate = async (e) => {
     e.preventDefault();

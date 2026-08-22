@@ -27,7 +27,7 @@ export async function POST(req) {
     const {
       email, password, name, role,
       departmentId, rollNo, year, section, semester,
-      employeeId, designation, firebaseUid: clientSupabaseUid
+      employeeId, designation, supabaseUid: clientSupabaseUid
     } = validated;
 
     if (role === 'FACULTY') {

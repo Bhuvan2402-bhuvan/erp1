@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, QrCode, Camera, CheckCircle, AlertCircle, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import jsQR from 'jsqr';
@@ -45,7 +45,7 @@ export default function VolunteerQRScannerModal({ isOpen, onClose, onAttendanceM
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -55,7 +55,37 @@ export default function VolunteerQRScannerModal({ isOpen, onClose, onAttendanceM
       videoRef.current.srcObject = null;
     }
     setScanning(false);
-  };
+  }, []);
+
+  const handleScanSuccess = useCallback(async (qrPayload) => {
+    stopCamera();
+    setProcessing(true);
+
+    try {
+      const res = await fetch('/api/attendance/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrPayload })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setScannedResult(data);
+        if (data.alreadyMarked) {
+          toast(data.message || 'Attendance already marked for this event.', { icon: 'ℹ️' });
+        } else {
+          toast.success(data.message || 'Attendance Automatically Verified! +3 Points 🎉');
+        }
+        if (onAttendanceMarked) onAttendanceMarked();
+      } else {
+        toast.error(data.message || 'Invalid Event QR Code');
+      }
+    } catch (err) {
+      toast.error('Network error scanning QR code');
+    } finally {
+      setProcessing(false);
+    }
+  }, [onAttendanceMarked, stopCamera]);
 
   // Continuous frame analysis with jsQR
   useEffect(() => {
@@ -99,45 +129,14 @@ export default function VolunteerQRScannerModal({ isOpen, onClose, onAttendanceM
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [scanning, isOpen]);
+  }, [scanning, isOpen, handleScanSuccess]);
 
-  // Clean up camera on close
   useEffect(() => {
     if (!isOpen) {
       stopCamera();
       setScannedResult(null);
     }
-  }, [isOpen]);
-
-  const handleScanSuccess = async (qrPayload) => {
-    stopCamera();
-    setProcessing(true);
-
-    try {
-      const res = await fetch('/api/attendance/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrPayload })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setScannedResult(data);
-        if (data.alreadyMarked) {
-          toast(data.message || 'Attendance already marked for this event.', { icon: 'ℹ️' });
-        } else {
-          toast.success(data.message || 'Attendance Automatically Verified! +3 Points 🎉');
-        }
-        if (onAttendanceMarked) onAttendanceMarked();
-      } else {
-        toast.error(data.message || 'Invalid Event QR Code');
-      }
-    } catch (err) {
-      toast.error('Network error scanning QR code');
-    } finally {
-      setProcessing(false);
-    }
-  };
+  }, [isOpen, stopCamera]);
 
   const handleManualSubmit = (e) => {
     e.preventDefault();
