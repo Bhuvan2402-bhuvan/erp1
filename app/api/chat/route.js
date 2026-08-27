@@ -23,7 +23,7 @@ export async function GET(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const contactId = searchParams.get('contactId');
+    const contactId = searchParams.get('contactId') || searchParams.get('userId');
     if (!contactId) {
       return NextResponse.json({ success: false, message: 'contactId parameter is required' }, { status: 400 });
     }

@@ -12,7 +12,7 @@ export default function ChatBox({ currentUser, targetUser }) {
   const fetchMessages = useCallback(async () => {
     if (!targetUser) return;
     try {
-      const res = await fetch(`/api/chat?userId=${targetUser.id}`);
+      const res = await fetch(`/api/chat?contactId=${targetUser.id}`);
       if (res.ok) {
         const data = await res.json();
         if (data.messages) setMessages(data.messages);
@@ -83,7 +83,7 @@ export default function ChatBox({ currentUser, targetUser }) {
       
       <div className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900 space-y-4">
         {messages.map((msg, idx) => {
-          const isMe = msg.senderId === currentUser.id;
+          const isMe = msg.senderId === currentUser.id || msg.senderId === currentUser.supabaseUid;
           const showTime = idx === messages.length - 1 || new Date(messages[idx+1]?.createdAt) - new Date(msg.createdAt) > 300000;
           return (
             <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
