@@ -43,10 +43,10 @@ const compressImageFile = (file, maxWidth = 1024, maxHeight = 1024, quality = 0.
   });
 };
 
-export default function EventDetailsModal({ eventId, onClose, currentUser, onRefresh }) {
+export default function EventDetailsModal({ eventId, onClose, currentUser, onRefresh, initialTab = 'details' }) {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('details'); // details, attendance, photos
+  const [activeTab, setActiveTab] = useState(initialTab || 'details'); // details, attendance, photos
   const [attendances, setAttendances] = useState({});
   const [savingAttendance, setSavingAttendance] = useState(false);
   const [newPhoto, setNewPhoto] = useState({ url: '', caption: '' });

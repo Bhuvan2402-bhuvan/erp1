@@ -25,6 +25,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const type = searchParams.get('type');
+    const departmentId = searchParams.get('departmentId');
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '50';
 
@@ -35,6 +36,11 @@ export async function GET(request) {
     const where = {};
     if (status) where.status = status;
     if (type) where.type = type;
+    if (departmentId) {
+      where.createdBy = {
+        departmentId: departmentId
+      };
+    }
 
     // Auto-update status of expired events
     await prisma.event.updateMany({
@@ -53,6 +59,18 @@ export async function GET(request) {
         take: limitNum,
         include: {
           _count: { select: { registrations: true, attendances: true, photos: true } },
+          createdBy: {
+            select: {
+              name: true,
+              role: true,
+              department: { select: { id: true, name: true, code: true } }
+            }
+          },
+          photos: {
+            take: 4,
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, url: true, caption: true }
+          },
           ...(dbUser.student ? {
             registrations: { where: { studentId: dbUser.student.id } }
           } : {})

@@ -338,7 +338,7 @@ function VisitorContent() {
                           </p>
                         )}
                         <p className="text-[10px] text-slate-400 mt-1">
-                          Posted by {photo.uploadedBy || 'NSS Coordinator'} &bull; {new Date(photo.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          Posted by {photo.uploadedBy || 'NSS Coordinator'} &bull; {photo.departmentCode || 'NSS'} Unit &bull; {new Date(photo.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
