@@ -250,12 +250,33 @@ function VisitorContent() {
         {activeTab === 'feed' && (
           <div>
             {loading ? (
-              <div className="p-16 text-center text-slate-400 text-sm">Loading activity feed...</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(n => (
+                  <div key={n} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
+                    <div className="p-3.5 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
+                        <div className="h-2 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
+                      </div>
+                    </div>
+                    <div className="aspect-square bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                ))}
+              </div>
             ) : filteredPhotos.length === 0 ? (
-              <div className="p-16 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+              <div className="p-16 text-center text-slate-400 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <Camera className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <p className="font-bold text-slate-600 dark:text-slate-300">No activity photos found</p>
-                <p className="text-xs text-slate-400 mt-1">Check back later for campaign photo updates from coordinators and faculty.</p>
+                <p className="font-bold text-slate-700 dark:text-slate-200 text-base">No activity photos found</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">Check out our ongoing campaigns in the &quot;Drives &amp; Camps&quot; tab or meet our faculty officers in the &quot;NSS Desk&quot; tab.</p>
+                <div className="mt-5 flex justify-center gap-3">
+                  <button onClick={() => setActiveTab('faculty')} className="px-4 py-2 text-xs font-bold bg-logo-teal/10 text-logo-teal rounded-full hover:bg-logo-teal/20 transition">
+                    View Faculty Directory
+                  </button>
+                  <button onClick={() => setActiveTab('events')} className="px-4 py-2 text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full hover:opacity-80 transition">
+                    View Camps & Drives
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

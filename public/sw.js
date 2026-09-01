@@ -1,17 +1,9 @@
-const CACHE_NAME = 'portal-cache-v2';
+const CACHE_NAME = 'portal-cache-v3';
 const ASSETS_TO_CACHE = [
-  '/logo.png',
-  '/icon-192.png',
-  '/icon-512.png',
   '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -21,6 +13,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
+            console.log('Purging old service worker cache:', cache);
             return caches.delete(cache);
           }
         })
@@ -35,8 +28,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
   
-  // Skip API, Firebase, and Next.js internal requests
-  if (url.pathname.startsWith('/api') || url.host.includes('firebase') || url.host.includes('googleapis') || url.pathname.startsWith('/_next')) {
+  // Pass all Next.js chunks, static files, and APIs directly to network
+  if (url.pathname.startsWith('/api') || url.pathname.startsWith('/_next') || url.host.includes('supabase') || url.host.includes('googleapis')) {
     return;
   }
 
