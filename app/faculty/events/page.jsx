@@ -41,20 +41,26 @@ export default function FacultyEvents() {
     type: 'ACTIVITY'
   });
 
-  const fetchData = useCallback(async (p = 1, filterType = eventFilter, user = dbUser) => {
+  const fetchData = useCallback(async (p = 1, filterType = eventFilter, userDeptId) => {
     setLoading(true);
     let url = `/api/events?page=${p}&limit=18`;
-    if (filterType === 'MY_BRANCH' && user?.faculty?.departmentId) {
-      url += `&departmentId=${user.faculty.departmentId}`;
+    const deptId = userDeptId !== undefined ? userDeptId : dbUser?.faculty?.departmentId;
+    if (filterType === 'MY_BRANCH' && deptId) {
+      url += `&departmentId=${deptId}`;
     }
 
-    const res = await fetch(url);
-    const data = await res.json();
-    setEvents(data.events || []);
-    setPage(data.pagination?.page || 1);
-    setTotalPages(data.pagination?.totalPages || 1);
-    setLoading(false);
-  }, [eventFilter, dbUser]);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setEvents(data.events || []);
+      setPage(data.pagination?.page || 1);
+      setTotalPages(data.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventFilter, dbUser?.faculty?.departmentId]);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -62,15 +68,17 @@ export default function FacultyEvents() {
       .then(data => {
         if (data.user) {
           setDbUser(data.user);
-          fetchData(1, eventFilter, data.user);
         }
       })
       .catch(console.error);
-  }, [eventFilter, fetchData]);
+  }, []);
+
+  useEffect(() => {
+    fetchData(1, eventFilter);
+  }, [eventFilter, dbUser?.faculty?.departmentId, fetchData]);
 
   const handleFilterChange = (type) => {
     setEventFilter(type);
-    fetchData(1, type, dbUser);
   };
 
   const handleCreateEvent = async (e) => {

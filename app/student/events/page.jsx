@@ -30,20 +30,26 @@ export default function StudentEvents() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [filterUnit, setFilterUnit] = useState('ALL'); // 'ALL' | 'MY_UNIT'
 
-  const fetchData = useCallback(async (p = 1, unitFilter = filterUnit, user = dbUser) => {
+  const fetchData = useCallback(async (p = 1, unitFilter = filterUnit, userDeptId) => {
     setLoading(true);
     let url = `/api/events?page=${p}&limit=18`;
-    if (unitFilter === 'MY_UNIT' && user?.student?.departmentId) {
-      url += `&departmentId=${user.student.departmentId}`;
+    const deptId = userDeptId !== undefined ? userDeptId : dbUser?.student?.departmentId;
+    if (unitFilter === 'MY_UNIT' && deptId) {
+      url += `&departmentId=${deptId}`;
     }
 
-    const res = await fetch(url);
-    const data = await res.json();
-    setEvents(data.events || []);
-    setPage(data.pagination?.page || 1);
-    setTotalPages(data.pagination?.totalPages || 1);
-    setLoading(false);
-  }, [filterUnit, dbUser]);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      setEvents(data.events || []);
+      setPage(data.pagination?.page || 1);
+      setTotalPages(data.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterUnit, dbUser?.student?.departmentId]);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -51,15 +57,17 @@ export default function StudentEvents() {
       .then(data => {
         if (data.user) {
           setDbUser(data.user);
-          fetchData(1, filterUnit, data.user);
         }
       })
       .catch(console.error);
-  }, [fetchData, filterUnit]);
+  }, []);
+
+  useEffect(() => {
+    fetchData(1, filterUnit);
+  }, [filterUnit, dbUser?.student?.departmentId, fetchData]);
 
   const handleUnitFilter = (unit) => {
     setFilterUnit(unit);
-    fetchData(1, unit, dbUser);
   };
 
   const handleRegister = async (eventId, e) => {
