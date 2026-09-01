@@ -257,10 +257,12 @@ export default function VisitorPage() {
 
                     {/* Image Container (Aspect Square) */}
                     <div className="relative aspect-square bg-slate-900 overflow-hidden">
-                      <img
+                      <Image
                         src={photo.url}
                         alt={photo.caption || photo.eventTitle}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        unoptimized
                       />
                       {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white font-bold text-sm">
@@ -371,7 +373,7 @@ export default function VisitorPage() {
                   {/* Photo */}
                   <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-3xl bg-white/10 border-2 border-white/20 overflow-hidden shrink-0 shadow-lg flex items-center justify-center text-3xl font-black">
                     {pcProfile.photoUrl ? (
-                      <img src={pcProfile.photoUrl} alt={pcProfile.name} className="w-full h-full object-cover" />
+                      <Image src={pcProfile.photoUrl} alt={pcProfile.name} width={160} height={160} className="w-full h-full object-cover" unoptimized />
                     ) : (
                       pcProfile.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
                     )}
@@ -429,7 +431,7 @@ export default function VisitorPage() {
                       <div className="flex items-start gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden shadow-sm">
                           {po.photoUrl ? (
-                            <img src={po.photoUrl} alt={po.name} className="w-full h-full object-cover" />
+                            <Image src={po.photoUrl} alt={po.name} width={64} height={64} className="w-full h-full object-cover" unoptimized />
                           ) : (
                             po.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
                           )}
@@ -474,7 +476,7 @@ export default function VisitorPage() {
           <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()}>
             {/* Left: Image */}
             <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
-              <img src={selectedPhoto.url} alt={selectedPhoto.caption || selectedPhoto.eventTitle} className="max-h-[70vh] md:max-h-[85vh] w-auto object-contain" />
+              <Image src={selectedPhoto.url} alt={selectedPhoto.caption || selectedPhoto.eventTitle} width={800} height={600} className="max-h-[70vh] md:max-h-[85vh] w-auto object-contain" unoptimized />
             </div>
 
             {/* Right: Info & Comments */}

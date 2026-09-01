@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { CheckCircle2, XCircle, MessageSquare, Clock, Send, Loader2, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import SubmissionStatusBadge from './SubmissionStatusBadge';
 
@@ -26,7 +27,7 @@ function AnswerDisplay({ field, answer }) {
   if (field.fieldType === 'file_upload' || field.fieldType === 'image_upload') {
     if (answer.fileUrl) {
       return field.fieldType === 'image_upload'
-        ? <img src={answer.fileUrl} alt="Uploaded" className="max-w-xs rounded-xl border border-slate-200 dark:border-slate-700" />
+        ? <Image src={answer.fileUrl} alt="Uploaded" width={320} height={240} className="max-w-xs h-auto rounded-xl border border-slate-200 dark:border-slate-700" unoptimized />
         : <a href={answer.fileUrl} target="_blank" rel="noopener" className="text-logo-teal hover:underline text-sm">{val || 'View file'}</a>;
     }
   }

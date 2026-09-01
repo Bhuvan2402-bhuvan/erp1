@@ -1,7 +1,6 @@
 import { getUser, verifyAccess } from '@/lib/auth-helpers';
 import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Users, Calendar, MessageSquare, Megaphone, UserCircle } from 'lucide-react';
 
 export const metadata = { title: 'Faculty Dashboard | VVITU NSS ERP' };
 

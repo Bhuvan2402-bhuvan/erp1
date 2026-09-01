@@ -1,6 +1,7 @@
 'use client';
 import { Clock, Users, Calendar, CheckCircle, XCircle, Edit3, FileText } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const STATUS_COLORS = {
   PUBLISHED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -41,7 +42,7 @@ export default function FormCard({ form, variant = 'student', baseHref }) {
       <div className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-lg hover:border-logo-teal/30 transition-all duration-200">
         {form.coverImageUrl && (
           <div className="h-32 bg-gradient-to-br from-logo-navy/10 to-logo-teal/10 relative overflow-hidden">
-            <img src={form.coverImageUrl} alt="" className="w-full h-full object-cover" />
+            <Image src={form.coverImageUrl} alt={form.title || 'Form cover'} fill className="object-cover" unoptimized />
           </div>
         )}
         {!form.coverImageUrl && (

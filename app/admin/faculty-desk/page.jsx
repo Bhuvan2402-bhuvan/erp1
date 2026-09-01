@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Award, UserCheck, Check, X, Shield, Star, Upload, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -224,7 +225,7 @@ export default function AdminFacultyDesk() {
               <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700">
                 {form.photoUrl ? (
                   <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-logo-teal shadow-sm shrink-0 bg-slate-200 dark:bg-slate-800">
-                    <img src={form.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <Image src={form.photoUrl} alt="Preview" width={80} height={80} className="w-full h-full object-cover" unoptimized />
                     <button
                       type="button"
                       onClick={() => setForm(f => ({ ...f, photoUrl: '' }))}
@@ -357,7 +358,7 @@ export default function AdminFacultyDesk() {
                   {/* Photo Avatar */}
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-logo-navy to-logo-teal text-white flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden shadow-sm">
                     {p.photoUrl ? (
-                      <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                      <Image src={p.photoUrl} alt={p.name} width={56} height={56} className="w-full h-full object-cover" unoptimized />
                     ) : (
                       p.name ? p.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase() : 'FC'
                     )}

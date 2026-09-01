@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Save, Send, AlertCircle, CheckCircle2, Loader2, Upload } from 'lucide-react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import SubmissionStatusBadge from './SubmissionStatusBadge';
 
@@ -301,8 +302,8 @@ export default function FormFillingInterface({ form, existingResponse, onSuccess
       {/* Form Header */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         {form.coverImageUrl && (
-          <div className="h-36 bg-gradient-to-br from-logo-navy to-logo-teal relative">
-            <img src={form.coverImageUrl} alt="" className="w-full h-full object-cover opacity-70" />
+          <div className="h-36 bg-gradient-to-br from-logo-navy to-logo-teal relative overflow-hidden">
+            <Image src={form.coverImageUrl} alt={form.title || 'Form cover'} fill className="object-cover opacity-70" unoptimized />
           </div>
         )}
         {!form.coverImageUrl && <div className="h-2 bg-gradient-to-r from-logo-navy to-logo-teal" />}

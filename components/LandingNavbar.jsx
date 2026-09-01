@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSupabase } from '@/lib/supabase/client-provider';

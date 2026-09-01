@@ -8,6 +8,7 @@ node_modules
 .wrangler
 .agents
 .cursor
+manus/
 
 # IDE & OS artifacts
 .vscode/
