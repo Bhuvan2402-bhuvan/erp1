@@ -6,18 +6,21 @@ import { useEffect } from 'react';
 
 export default function Providers({ children }) {
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      if (process.env.NODE_ENV === 'production') {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => console.log('Service worker registered: ', reg.scope))
-          .catch((err) => console.error('Service worker registration failed: ', err));
-      } else {
+    if (typeof window !== 'undefined') {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           for (let registration of registrations) {
             registration.unregister();
-            console.log('Service worker unregistered in development mode');
+            console.log('Unregistered service worker to guarantee fresh styles');
           }
-        });
+        }).catch(() => {});
+      }
+      if ('caches' in window) {
+        caches.keys().then((keys) => {
+          for (let key of keys) {
+            caches.delete(key);
+          }
+        }).catch(() => {});
       }
     }
   }, []);

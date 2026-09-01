@@ -95,9 +95,9 @@ function VisitorContent() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex items-center gap-3">
-              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={70} height={35} className="h-8 w-auto object-contain rounded" priority />
+              <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={70} height={35} className="h-8 w-auto object-contain rounded" priority unoptimized />
               <div className="h-5 w-px bg-slate-300 dark:bg-slate-700" />
-              <Image src="/nss-logo.png" alt="NSS Logo" width={90} height={35} className="h-8 w-auto object-contain" priority />
+              <Image src="/nss-logo.png" alt="NSS Logo" width={90} height={35} className="h-8 w-auto object-contain" priority unoptimized />
               <span className="font-extrabold text-sm text-slate-800 dark:text-white hidden sm:inline-block">
                 VVITU NSS ERP
               </span>
@@ -125,7 +125,7 @@ function VisitorContent() {
             <div className="relative group shrink-0">
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 bg-gradient-to-tr from-amber-500 via-logo-teal to-logo-navy shadow-lg">
                 <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-2 flex items-center justify-center">
-                  <Image src="/nss-logo.png" alt="NSS Unit" width={100} height={100} className="w-full h-full object-contain" priority />
+                  <Image src="/nss-logo.png" alt="NSS Unit" width={100} height={100} className="w-full h-full object-contain" priority unoptimized />
                 </div>
               </div>
             </div>
