@@ -1,199 +1,396 @@
-# VVITU NSS ERP: Complete System & User Role Documentation
+# VVITU NSS ERP — Complete System & Architecture Documentation
 
-VVITU NSS ERP is a centralized, enterprise-grade Resource Planning and Attendance Management Portal designed to streamline student volunteering, branch operations, financial management, documentation archiving, anti-proxy attendance verification, and real-time community engagement.
+**VVITU NSS ERP** is an enterprise-grade Institutional Resource Planning, Activity Auditing, and Volunteer Management Platform built specifically for the **National Service Scheme (NSS)** at **Vasireddy Venkatadri Institute of Technology (Autonomous)**.
+
+The system replaces manual paper logs and disparate spreadsheets with a unified, real-time platform covering **Academic Year Monitoring**, **Year-Wise Financial Auditing**, **Unit-Wise Event Operations & Photo Galleries**, **Anti-Proxy QR Attendance**, **Dynamic Form Building**, **Faculty Leadership Showcase**, and **Gamified Volunteer Portfolios**.
 
 ---
 
-## 1. System Architecture & Technical Specifications
+## 📑 Table of Contents
+1. [System Architecture & Tech Stack](#1-system-architecture--tech-stack)
+2. [Role-Based Access Control (RBAC) Matrix](#2-role-based-access-control-rbac-matrix)
+3. [Core Functional Modules](#3-core-functional-modules)
+   - [3.1 Academic Year-Wise Monitoring Engine](#31-academic-year-wise-monitoring-engine)
+   - [3.2 Year-Wise Financial Reports & Audit Ledger](#32-year-wise-financial-reports--audit-ledger)
+   - [3.3 Unit-Wise Event & Photo Management](#33-unit-wise-event--photo-management)
+   - [3.4 Anti-Proxy QR Attendance Gate](#34-anti-proxy-qr-attendance-gate)
+   - [3.5 Faculty Desk & Leadership Directory](#35-faculty-desk--leadership-directory)
+   - [3.6 Dynamic Custom Form Builder & Submissions](#36-dynamic-custom-form-builder--submissions)
+   - [3.7 Volunteer Portfolios & Gamified Recognition](#37-volunteer-portfolios--gamified-recognition)
+   - [3.8 1:1 Grievance Redressal & Live Chat](#38-11-grievance-redressal--live-chat)
+4. [Authentication & Security Implementation](#4-authentication--security-implementation)
+5. [Database Schema & Data Models](#5-database-schema--data-models)
+6. [API Route Specifications](#6-api-route-specifications)
+7. [Deployment & Environment Setup Guide](#7-deployment--environment-setup-guide)
+8. [Test Accounts & Access Roster](#8-test-accounts--access-roster)
 
-The application uses a modern, secure, and highly scalable serverless web architecture:
+---
 
-* **Frontend Framework**: Next.js 14 (App Router) using React 18, TailwindCSS, and Framer Motion.
-* **ORM & Data Access**: Prisma Client v5 with PostgreSQL.
-* **Database Infrastructure**: Supabase PostgreSQL hosting relational models and query indexing.
-* **Authentication**: Supabase Auth coupled with HTTPOnly JWT cookies and rate-limited API handlers.
-* **Real-time Engine**: Supabase Realtime client for instant peer-to-peer and coordinator messaging.
-* **Deployment & Edge Runtime**: Vercel Edge Serverless runtime with Next.js Middleware RBAC security.
+## 1. System Architecture & Tech Stack
 
 ```
-       ┌──────────────────────────────────────────────────────────┐
-       │                 Browser Client (PWA ready)               │
-       └─────────────────────────────┬────────────────────────────┘
-                                     │ (HTTPS API Requests)
-                                     ▼
-       ┌──────────────────────────────────────────────────────────┐
-       │             Next.js Serverless Middleware Gate           │
-       │   (JWT Verification, Role Access Control, Rate Limiting) │
-       └─────────────────────────────┬────────────────────────────┘
-                                     │ (Authorized Route Handlers)
-                                     ▼
-       ┌──────────────────────────────────────────────────────────┐
-   | Feature / Capability | Public Visitor | Student Volunteer | Student Coordinator | Faculty Coordinator | System Admin |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Account Quota Cap** | N/A | Unlimited | **Max 20** | **Max 15** | **Max 4** |
-| **Browse Public Visitor Portal** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **View Verified Volunteer Names & Count** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Self Sign-Up & Registration** | N/A | ✅ | Self (Requires Promotion) | ✅ (Quota Check) | Restricted |
-| **Manage myBharat ID & Certificate URL** | ❌ | ✅ | ✅ | View & Audit | View & Audit |
-| **Register & Participate in Events** | ❌ | ✅ | ✅ | Manage Drives | Manage Drives |
-| **Anti-Proxy QR Attendance Scan** | ❌ | ✅ (Scan Code) | ✅ (Generate/Scan) | ✅ (Generate/Scan) | ✅ (Generate/Scan) |
-| **Earn & View Service Points / Badges** | ❌ | ✅ | ✅ | Award Points | Award Points |
-| **1:1 Complaint Box Submission** | ❌ | ✅ | ✅ | Resolve Complaints | Resolve Complaints |
-| **Toggle Complaint (SOLVED / NOT_SOLVED)** | ❌ | View Status | ✅ Toggle | ✅ Toggle | ✅ Toggle |
-| **Dynamic Custom Forms (Fill & Submit)** | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Form Builder (Create & Design)** | ❌ | ❌ | ✅ (Branch Forms) | ✅ (Branch Forms) | ✅ (System Forms) |
-| **Form Response Review & Approvals** | ❌ | View Own Submissions | ✅ Review Branch | ✅ Review Branch | ✅ Full Review |
-| **Form Analytics & Excel/CSV Export** | ❌ | ❌ | ✅ Branch Analytics | ✅ Branch Analytics | ✅ System Analytics |
-| **Finance Ledger Management** | ❌ | View Docs | Add/View Records | Full Control | Full Control |
-| **Documentation Hub (Upload/Download)** | ❌ | Download | Upload & Download | Full Control | Full Control |
-| **Broadcast Circular Notifications** | ❌ | Receive All | Receive All | Broadcast to All | Broadcast to All |
-| **Issue Misconduct / Absence Warnings** | ❌ | Receive Notice | Issue Notice | Issue Notice | Full Audit |
-| **One-Click Data Backup & Export** | ❌ | ❌ | ❌ | ✅ Download | ✅ Download |
-| **Approve / Reject Pending Accounts** | ❌ | ❌ | Branch Approvals | Branch Approvals | System Approvals |
+                               ┌─────────────────────────────────────────┐
+                               │  Client Browsers (Desktop & Mobile PWA) │
+                               └────────────────────┬────────────────────┘
+                                                    │ HTTPS / WSS
+                                                    ▼
+                               ┌─────────────────────────────────────────┐
+                               │    Next.js 14 App Router Middleware     │
+                               │  (JWT Cookie Auth, Role Guard, Headers) │
+                               └────────────────────┬────────────────────┘
+                                                    │
+                   ┌────────────────────────────────┼────────────────────────────────┐
+                   ▼                                ▼                                ▼
+   ┌───────────────────────────────┐ ┌───────────────────────────────┐ ┌───────────────────────────────┐
+   │    App Route Handlers (API)   │ │    SSR / Dynamic UI Pages     │ │      Supabase Realtime        │
+   │  - /api/monitoring/academic-… │ │  - /admin/* (Admin Portal)    │ │  - Instant Peer Chat        │
+   │  - /api/finance               │ │  - /faculty/* (Faculty Desk)  │ │  - Live Notification Pushes │
+   │  - /api/events & photos       │ │  - /student/* (Volunteer App) │ │                             │
+   │  - /api/forms & responses     │ │  - /visitor (Public Directory)│ │                             │
+   └───────────────┬───────────────┘ └──────────────┬────────────────┘ └───────────────┬───────────────┘
+                   │                                │                                  │
+                   └────────────────────────────────┼──────────────────────────────────┘
+                                                    ▼
+                               ┌─────────────────────────────────────────┐
+                               │         Prisma ORM Client v5.22         │
+                               └────────────────────┬────────────────────┘
+                                                    │ Pooled Connections
+                                                    ▼
+                               ┌─────────────────────────────────────────┐
+                               │   Supabase PostgreSQL Cloud Database   │
+                               │  (Multi-tenant Relational Data Models)  │
+                               └─────────────────────────────────────────┘
+```
+
+### Technical Stack:
+* **Frontend Framework**: [Next.js 14](https://nextjs.org/) (App Router architecture with React 18).
+* **Styling & Design System**: Tailwind CSS with curated color schemes, dark/light mode toggle, micro-animations, and glassmorphism.
+* **Database & ORM**: PostgreSQL hosted on [Supabase](https://supabase.com/) with [Prisma ORM v5](https://www.prisma.io/).
+* **Authentication**: Supabase Auth (Email/Password & Google OAuth 2.0 with PKCE verification) + HTTPOnly secure JWT sessions.
+* **Real-time Engine**: `@supabase/supabase-js` realtime websockets for instant 1:1 chat and announcements.
+* **Hosting & Edge Delivery**: [Vercel](https://vercel.com/) Serverless Edge Network with automated CI/CD and CDN caching.
 
 ---
 
-## 3. User Role Working Capabilities (In-Depth)
+## 2. Role-Based Access Control (RBAC) Matrix
 
-### 🌐 1. Public Visitor (Unauthenticated Guest)
-* **Target Audience**: Parents, external auditors, institution visitors, and public stakeholders.
-* **Working Capabilities**:
-  * **Visitor Dashboard (`/visitor`)**: Access live high-level impact statistics including Total Active Volunteers, Student Coordinators, Faculty Officers, and Executed Campaigns.
-  * **Public Volunteer Roster**: View public directory of registered volunteers displaying name, department code, roll number, academic year, coordinator status, total accumulated service points, and achievement tier badges (Bronze, Silver, Gold, Platinum).
-  * **Privacy Control**: Private contact numbers, email addresses, and personal street addresses are strictly hidden.
-  * **Search & Department Filtering**: Instant search by volunteer name or roll number, with branch dropdown filters.
-
----
-
-### 🎓 2. Student Volunteer (Default Registered Student)
-* **Account Requirement**: Self registration via `/signup` with email verification.
-* **Working Capabilities**:
-  * **Campaign Feed (`/student/events`)**: Browse upcoming, ongoing, and completed volunteering campaigns (Blood Donation, Plantation, Surveys, Workshops). One-click registration.
-  * **Anti-Proxy QR Gate**: Present personal QR code or scan time-sensitive TOTP QR codes generated by coordinators to log audited live attendance.
-  * **myBharat Portal Profile (`/student/profile`)**: Manage personal details, phone number, bio, avatar, and official `myBharatId` & `myBharatCertUrl`.
-  * **Points & Gamified Achievements**: Earn performance points (+10, +20, etc.) awarded by coordinators for active campaign work. Track achievement milestones:
-    * 🥉 **Bronze**: < 50 points
-    * 🥈 **Silver**: 50 - 149 points
-    * 🥇 **Gold**: 150 - 299 points
-    * 💎 **Platinum**: 300+ points
-  * **Service Portfolio (`/student/portfolio`)**: Visual service summary logging total volunteer hours, completed drives, attendance percentage, and downloadable digital service certificates.
-  * **1:1 Complaint Box (`/student/issues`)**: Submit direct 1:1 grievances or requests to branch coordinators and faculty. Monitor real-time status: **`NOT_SOLVED`** vs **`SOLVED`**.
-  * **Available Custom Forms (`/student/forms/available`)**: Discover active department and campus-wide surveys, registration forms, and feedback questionnaires.
-  * **Dynamic Form Submission (`/student/forms/[formId]/fill`)**: Complete forms with rich input types (short/long text, dropdowns, ratings, checkboxes, linear scales, file uploads, yes/no). Supports saving drafts and draft recovery.
-  * **My Form Submissions (`/student/forms/my-submissions`)**: Track status of submitted forms (**`DRAFT`**, **`SUBMITTED`**, **`UNDER_REVIEW`**, **`APPROVED`**, **`REJECTED`**) with reviewer notes.
-  * **Documentation Hub (`/student/documentation`)**: Download official event reports, standard operating guidelines, circular notices, and archives.
-  * **Real-time Peer Chat (`/student/chat`)**: Direct real-time messaging with assigned mentors, coordinators, and peers.
+| Feature / Capability | Public Visitor | Student Volunteer | Student Coordinator | Faculty Coordinator | System Admin |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Account Quota Cap** | Unlimited | Unlimited | Max 20 System-wide | Max 15 System-wide | Max 4 System-wide |
+| **Public Visitor Directory & Feeds** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Faculty Leadership Profiles Showcase** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Academic Year Monitoring Dashboard** | ❌ | ❌ | ❌ | ✅ (Branch Scoped) | ✅ (Institution-wide) |
+| **Year-Wise Financial Auditing & Ledger** | ❌ | ❌ | View Docs | ✅ (Branch Entries) | ✅ (Full Authority) |
+| **1-Click Audit Report CSV Export** | ❌ | ❌ | ❌ | ✅ (Branch CSV) | ✅ (Master CSV) |
+| **Post Events & Upload Drive Photos** | ❌ | ❌ | ✅ (Branch Drives) | ✅ (Branch Drives) | ✅ (All Drives) |
+| **Anti-Proxy QR Attendance Scanner** | ❌ | ✅ (Scan Code) | ✅ (Generate/Scan) | ✅ (Generate/Scan) | ✅ (Generate/Scan) |
+| **Gamified Points & Milestones** | ❌ | ✅ (Earn/View) | ✅ (Allot Points) | ✅ (Allot Points) | ✅ (Full Control) |
+| **Dynamic Form Builder & Analytics** | ❌ | Fill & Submit | Branch Forms | Branch Forms | System Forms |
+| **1:1 Grievance Box & Status Toggle** | ❌ | Submit Ticket | Solve Tickets | Solve Tickets | Full Oversight |
+| **Approve / Reject User Accounts** | ❌ | ❌ | Branch Approvals | Branch Approvals | Master Approvals |
+| **Database Backup & CSV Dumps** | ❌ | ❌ | ❌ | ✅ Branch Dump | ✅ Complete Backup |
 
 ---
 
-### ⭐ 3. Student Coordinator (Promoted Volunteer)
-* **Quota Capacity**: **Maximum 20 accounts across the system**.
-* **Account Requirement**: Promoted from Volunteer by a Faculty member or Admin.
-* **Working Capabilities**:
-  * **All Capabilities of a Student Volunteer**, plus:
-  * **Branch Volunteers Management (`/student/volunteers`)**: View and manage volunteers within the coordinator's academic branch.
-  * **Approve Pending Branch Sign-Ups**: Review and approve newly registered student accounts belonging to their department.
-  * **Custom Forms Builder & Management (`/student/forms`)**: Create, publish, close, edit, and track branch custom forms (`/student/forms/create`).
-  * **Form Response Review**: Inspect volunteer submissions, add coordinator review notes, and set response approval status (**`APPROVED`** / **`REJECTED`** / **`UNDER_REVIEW`**).
-  * **Form Analytics & Data Export**: View visual submission analytics and export full response matrices to `.xlsx` Excel spreadsheets.
-  * **Allot Performance Points**: Modal tool to award points (+10, +20, etc.) with custom reasons to branch volunteers.
-  * **Issue Misconduct Warnings**: Issue official warning notices (with optional proof URLs) to absent or proxy-attempting volunteers.
-  * **Post New Event Drives (`/student/create-event`)**: Create and launch new volunteering activities for branch volunteers.
-  * **Manage 1:1 Complaints**: Review student complaints and toggle status between **`NOT_SOLVED`** and **`SOLVED`**.
+## 3. Core Functional Modules
+
+### 3.1 Academic Year-Wise Monitoring Engine
+* **Routes**: `/admin/monitoring` & `/faculty/monitoring` | **API**: `/api/monitoring/academic-years`
+* **Academic Cycles Supported**: Multi-year evaluation across `2026-2027`, `2025-2026`, `2024-2025`, `2023-2024`, and `2022-2023` (aligned with the Indian University June 1 – May 31 cycle).
+* **Key Capabilities**:
+  * **Interactive Year Pills**: One-click switching between historical and active academic sessions.
+  * **Aggregated KPIs**: Active approved volunteer strength, verified community service hours, campaigns executed, and student coordinator distribution.
+  * **Department Benchmarking Matrix**: Comparative leaderboard comparing all 10 academic disciplines (CSE, ECE, EEE, MECH, CIVIL, IT, CSM, CSD, AID, CIC).
+  * **Year-over-Year Growth Visualizer**: 5-year longitudinal trend comparisons for student engagement and service volume.
+  * **Top Volunteer Recognition**: Leaderboard identifying top point and service-hour contributors for each academic cycle.
+  * **1-Click CSV Export**: Instant download of the full institutional academic year report (`NSS_Academic_Year_Report_[Year].csv`).
 
 ---
 
-### 👨‍🏫 4. Faculty Coordinator (Branch Faculty Officer)
-* **Quota Capacity**: **Maximum 15 accounts across the system**.
-* **Account Requirement**: Registered via `/signup` under Faculty role, subject to quota check and Admin approval.
-* **Working Capabilities**:
-  * **My Branch Operations Hub (`/faculty/branch`)**: Comprehensive dashboard tracking department stats, total volunteers, coordinators count, and student list.
-  * **Promote Student Coordinators**: Toggle `isCoordinator` status on student profiles (enforces maximum 20 student coordinators limit).
-  * **Assign Faculty Mentors**: Assign specific faculty mentors to student volunteers.
-  * **Dynamic Forms Control Suite (`/faculty/forms`)**: Complete lifecycle management for department forms (Drafts, Published, Closed). Visual drag-and-drop field builder, conditional display rules, and customizable access visibility (`DEPARTMENT_ONLY`, `ALL_VOLUNTEERS`, `SELECTED_DEPARTMENTS`).
-  * **Form Submissions Review & Decisioning (`/faculty/forms/[formId]/responses`)**: Review submitted responses, inspect attached uploaded files, add faculty notes, and transition statuses (**`UNDER_REVIEW`** -> **`APPROVED`** / **`REJECTED`**).
-  * **Form Analytics Engine (`/faculty/forms/[formId]/analytics`)**: Interactive chart breakdowns, response rates, field distributions, and one-click `.xlsx` Excel / CSV data export (`/api/forms/[formId]/export`).
-  * **Financial Ledger Management (`/faculty/finance`)**: Log and monitor event budgets, income/sponsorships, and operational expenses with receipt file URLs. View automated balance calculations.
-  * **Documentation Management (`/faculty/documentation`)**: Upload and publish event reports, circular notices, guidelines, and archives.
-  * **Broadcast Circular Announcements (`/faculty/announcements`)**: Post campus-wide circulars with instant push notification delivery to **each and every active volunteer**.
-  * **System Data Backup Hub (`/faculty/backup`)**: One-click JSON export for financial records, documentations, event reports, form responses, and audited student attendance logs.
+### 3.2 Year-Wise Financial Reports & Audit Ledger
+* **Routes**: `/admin/finance` & `/faculty/finance` | **API**: `/api/finance`
+* **Key Capabilities**:
+  * **Annual Financial Ledger**: Itemized tracking of income (sponsorships, donations, university grants), expenses (camps, transport, refreshments, printing, medical), and annual budget allocations.
+  * **Financial Health Summary**: Real-time compute of Total Allocated Budget, Total Spent, Net Remaining Balance, and % Budget Utilization meter.
+  * **Year-Wise Financial Audit Comparison**: Visual comparative cards tracking expenditures across multiple academic cycles.
+  * **Expense Category Matrix**: Spending distribution categorized by Event Logistics, Refreshments, First Aid, Transportation, Printing, and Awards.
+  * **Digital Invoice & Receipt Storage**: Direct linking and previewing of proof receipts.
+  * **1-Click Audit Report Export**: Spreadsheet download (`NSS_Financial_Report_AY_[Year].csv`) formatted for university auditing.
 
 ---
 
-### 🛡️ 5. System Administrator (Super Admin)
-* **Quota Capacity**: **Maximum 4 accounts across the system**.
-* **Working Capabilities**:
-  * **System Overview Dashboard (`/admin/overview`)**: Master control dashboard visualizing system-wide metrics, department distributions, active campaigns, open grievances, and role account quota counters (`Admin (X/4)`, `Faculty (X/15)`, `Student Coordinators (X/20)`).
-  * **User Approvals Center (`/admin/approvals`)**: Review all pending sign-ups across all branches with single-click Approval or Rejection controls.
-  * **Global Forms Governance Hub (`/admin/forms`)**: Audit all campus forms across all departments, inspect active vs closed status, view response volumes, and monitor form audit logs.
-  * **Faculty Management (`/admin/faculty`)**: Manage faculty members, employee IDs, and department assignments.
-  * **Branch Management (`/admin/branches`)**: Create, edit, and audit academic departments and codes.
-  * **Global Complaint & Grievance Control (`/admin/issues`)**: Monitor system-wide complaints and switch resolution status (**`SOLVED`** / **`NOT_SOLVED`**).
-  * **System Backup & Data Export Hub (`/admin/backup`)**: Full system snapshot export (JSON bundle) including all system data models.
+### 3.3 Unit-Wise Event & Photo Management
+* **Routes**: `/faculty/events`, `/student/events`, `/admin/events` | **API**: `/api/events`, `/api/events/[id]/photos`
+* **Key Capabilities**:
+  * **Unit Scoping**: Faculty Coordinators and Student Leads can post campaigns categorized under their departmental unit (`CSE Unit`, `ECE Unit`, etc.).
+  * **Client-Side Image Compression**: Automatic browser-side compression (JPEG 0.8 quality, max 1024px) for rapid uploads without cloud timeouts.
+  * **Photo Gallery & Lightbox**: Volunteers and visitors can view high-resolution event photo albums with captions and coordinator attribution.
+  * **Campaign Lifecycle Management**: Filter campaigns by `UPCOMING`, `ONGOING`, and `COMPLETED`.
 
 ---
 
-## 4. Primary Functional Modules & Specifications
-
-### 📊 1. Role Account Quota Limits
-- **Strict Limits**: Admin (4), Faculty Coordinator (15), Student Coordinator (20), Volunteers (Open).
-- **Validation Gates**:
-  - Enforced during registration (`/api/auth/signup`).
-  - Enforced during account approval (`/api/admin/approvals`).
-  - Enforced during coordinator promotion (`/api/users/[id]`).
-
----
-
-### 💰 2. Financial Ledger & Budget Management
-- **Prisma Model**: `FinanceRecord` (`id`, `title`, `amount`, `type` [`INCOME`, `EXPENSE`, `BUDGET`], `category`, `description`, `receiptUrl`, `createdById`, `createdAt`).
-- **Functionality**:
-  - Automated mathematical sum calculations: `Remaining Balance = (Total Budget + Total Income) - Total Expenses`.
-  - Category tag filtering (Event, Equipment, Refreshments, Travel, Misc).
-  - External receipt URL attachment.
+### 3.4 Anti-Proxy QR Attendance Gate
+* **Components**: `EventQRModal.jsx`, `VolunteerQRScannerModal.jsx` | **API**: `/api/events/[id]/attendance`
+* **Key Capabilities**:
+  * **Time-Sensitive Dynamic QR Code**: Faculty/Coordinators project or display dynamic QR codes during live drives.
+  * **Mobile Camera Scanner**: Student volunteers use built-in HTML5 camera scanner in `/student/events` to verify physical presence.
+  * **Verified Hours Tracking**: Automatically awards verified service hours (+3 hours per verified camp) to volunteer records.
+  * **Manual Audit Backup**: Coordinators can inspect registration lists and manually toggle presence with attendance timestamps.
 
 ---
 
-### 📂 3. Documentation & Archive Hub
-- **Prisma Model**: `Documentation` (`id`, `title`, `category` [`REPORT`, `CIRCULAR`, `GUIDELINE`, `ARCHIVE`], `description`, `fileUrl`, `uploadedById`, `createdAt`).
-- **Functionality**:
-  - Centralized file library with category filtering tabs.
-  - One-click file download / view links.
-  - Uploader identity and role tracing.
+### 3.5 Faculty Desk & Leadership Directory
+* **Routes**: `/visitor?tab=faculty`, `/admin/faculty-desk`, Home Page Spotlight | **API**: `/api/faculty-desk`, `/api/visitor`
+* **Key Capabilities**:
+  * **Program Coordinator (PC) Spotlight**: Prominently highlights the institutional Program Coordinator with photo, message, and achievements.
+  * **Program Officers (POs) Directory**: Unit coordinators across all college branches listed with contact details, designations, and department badges.
+  * **Dynamic Admin Manager (`/admin/faculty-desk`)**: Real-time CRUD manager to update faculty forewords, achievements, profile images, and visibility.
 
 ---
 
-### 📢 4. Circular Broadcasting Engine
-- **Mechanism**: Integrated into Public Messages / Announcements posting (`/api/public-messages`).
-- **Broadcast Execution**: Upon posting a circular notice, the system automatically creates instant `Notification` records for **each and every active student volunteer** in the system.
+### 3.6 Dynamic Custom Form Builder & Submissions
+* **Routes**: `/faculty/forms`, `/student/forms`, `/admin/forms` | **API**: `/api/forms`
+* **Key Capabilities**:
+  * **Rich Field Types**: Short text, long paragraph, single select (radio/dropdown), multi-select (checkboxes), rating scale, linear 1-10 scale, yes/no, and file attachments.
+  * **Lifecycle Controls**: `DRAFT` ➔ `PUBLISHED` ➔ `CLOSED`.
+  * **Workflow Approvals**: Review responses, add reviewer notes, and mark submissions as `APPROVED`, `UNDER_REVIEW`, or `REJECTED`.
+  * **Analytics & Excel Export**: Visual submission distribution graphs and instant `.xlsx` / `.csv` data export.
 
 ---
 
-### 🛡️ 5. Anti-Proxy Attendance Verification
-- **Mechanism**: Dynamic TOTP QR code generator for faculty and coordinators.
-- **Audit Log**: Prisma `EventAttendance` table logs timestamp, event ID, student ID, attendance presence (`Boolean`), and auditor `markedById`.
-- **Misconduct Warnings**: Direct modal integration to log official warning records (`WarningLog`) with proof URLs for absent or proxy-scanning volunteers.
+### 3.7 Volunteer Portfolios & Gamified Recognition
+* **Routes**: `/student/portfolio`, `/student/profile`, `/visitor` | **API**: `/api/students`, `/api/points`
+* **Key Capabilities**:
+  * **Milestone Badges**:
+    * 🥉 **Bronze**: < 50 Points
+    * 🥈 **Silver**: 50 – 149 Points
+    * 🥇 **Gold**: 150 – 299 Points
+    * 💎 **Platinum**: 300+ Points
+  * **myBharat Government Integration**: Field tracking for Official `myBharatId` and verified government certificate URLs.
+  * **Printable Service Record**: Visual printable transcript summarizing total drives, verified service hours, and achievements.
 
 ---
 
-### 📝 6. Dynamic Custom Forms & Survey Engine
-- **Prisma Models**: `Form`, `FormField`, `FormResponse`, `FormAnswer`, `FormAccess`, `FormResponseNote`, `FormAuditLog`.
-- **Field Types**: 18 supported input field types including Short Text, Long Text, Dropdown, Radio, Checkbox, Multi-Select, Number, Email, Phone, Date, Rating, Linear Scale, Yes/No, File Upload, Image Upload, Signature, Section/Heading, and Divider.
-- **Form Lifecycle**: Status state transitions (`DRAFT` -> `PUBLISHED` -> `CLOSED` -> `ARCHIVED`).
-- **Visibility Governance**: `DEPARTMENT_ONLY`, `SELECTED_DEPARTMENTS`, `ALL_VOLUNTEERS`, `SELECTED_USERS`.
-- **Response Review Workflow**: Multi-tier response decisioning (`DRAFT`, `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`) with reviewer audit notes.
-- **Export & Analytics Engine**: Automated bar chart field distributions, response completion rates, and 1-click `.xlsx` Excel and `.csv` matrix export via `xlsx` integration.
+### 3.8 1:1 Grievance Redressal & Live Chat
+* **Routes**: `/student/issues`, `/faculty/branch`, `/student/chat`, `/faculty/chat` | **API**: `/api/issues`
+* **Key Capabilities**:
+  * **Confidential Grievance Box**: Volunteers submit issues or requests directly to branch faculty officers.
+  * **Status Lifecycle**: Toggle tickets between `NOT_SOLVED` and `SOLVED` with coordinator resolution notes.
+  * **Real-time Messaging**: Instant peer-to-mentor messaging powered by Supabase Realtime channels.
 
 ---
 
-### 📦 7. System Data Backup Engine
-- **Endpoint**: `/api/backup?type=[all|finance|documentation|events|attendance|forms]`.
-- **Capability**: One-click download of JSON structured data exports for offline backup storage and institutional compliance.
+## 4. Authentication & Security Implementation
+
+### 1. Dual-Mode Authentication:
+* **Email & Password**: Salted bcrypt hashing with email verification workflow.
+* **Google OAuth 2.0 (PKCE)**: Direct one-click login linked with verified institutional Google credentials.
+
+### 2. Session Architecture:
+* Handled via **HTTPOnly, Secure, SameSite Cookies** containing signed JWT tokens.
+* Protected against Cross-Site Scripting (XSS) and Cross-Site Request Forgery (CSRF).
+
+### 3. Edge Route Guard (`middleware.js`):
+* Inspects requests at the Vercel Edge layer before executing server components.
+* Strict role redirects:
+  * `/admin/*` ➔ Restricted to `ADMIN`
+  * `/faculty/*` ➔ Restricted to `FACULTY` or `ADMIN`
+  * `/student/*` ➔ Restricted to `STUDENT`, `COORDINATOR`, or `ADMIN`
+
+### 4. Self-Destructing Cache Buster (`public/sw.js` & `app/Providers.jsx`):
+* Automatically unregisters legacy Service Workers and clears stale client-side caches to prevent outdated CSS/JS chunk mismatches during rapid deployments.
 
 ---
 
-## 5. Security, Validation & Performance Hardening
+## 5. Database Schema & Data Models
 
-1. **Rate Limiting**: IP-based sliding window rate limiter (`lib/rate-limit.js`) protecting sensitive endpoints (`POST /api/auth/signup`, `POST /api/users/[id]/reset-password`).
-2. **Schema Sanitization & Validation**: All incoming API requests validated strictly using Zod schemas (`lib/validations.js`).
-3. **Data Sanitization**: Global helper wrappers (`lib/api-helpers.js`) sanitize API error tracebacks to prevent SQL schema or internal stack leaks.
-4. **Security Headers**: Configured in `next.config.mjs` (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`).
+The system uses **18 PostgreSQL Relational Models** mapped through Prisma:
+
+```prisma
+// Core User & Authentication
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  name            String
+  role            Role           @default(STUDENT) // ADMIN, FACULTY, STUDENT
+  approvalStatus  ApprovalStatus @default(PENDING) // PENDING, APPROVED, REJECTED
+  isBlocked       Boolean        @default(false)
+  avatarUrl       String?
+  phone           String?
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  student         Student?
+  faculty         Faculty?
+  createdAt       DateTime       @default(now())
+}
+
+// Student Volunteer Extension
+model Student {
+  id              String            @id @default(uuid())
+  userId          String            @unique
+  rollNo          String            @unique
+  regNo           String?           @unique
+  year            Int               // 1, 2, 3, 4
+  section         String
+  semester        Int
+  departmentId    String
+  isCoordinator   Boolean           @default(false)
+  points          Int               @default(0)
+  myBharatId      String?
+  myBharatCertUrl String?
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department      Department        @relation(fields: [departmentId], references: [id])
+  attendances     EventAttendance[]
+  registrations   EventRegistration[]
+}
+
+// Faculty Coordinator Extension
+model Faculty {
+  id              String            @id @default(uuid())
+  userId          String            @unique
+  employeeId      String            @unique
+  designation     String
+  departmentId    String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department      Department        @relation(fields: [departmentId], references: [id])
+}
+
+// Event & Campaign Operations
+model Event {
+  id              String            @id @default(uuid())
+  title           String
+  description     String?
+  date            DateTime
+  endDate         DateTime?
+  location        String?
+  type            EventType         @default(ACTIVITY) // CAMP, ACTIVITY, WORKSHOP, RALLY, AWARENESS
+  status          EventStatus       @default(UPCOMING) // UPCOMING, ONGOING, COMPLETED, CANCELLED
+  createdById     String
+  createdBy       User              @relation(fields: [createdById], references: [id])
+  photos          EventPhoto[]
+  attendances     EventAttendance[]
+  registrations   EventRegistration[]
+}
+
+// Event Media & Photos
+model EventPhoto {
+  id              String            @id @default(uuid())
+  eventId         String
+  url             String
+  caption         String?
+  uploadedById    String
+  event           Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy      User              @relation(fields: [uploadedById], references: [id])
+  createdAt       DateTime          @default(now())
+}
+
+// Financial Ledger & Audit
+model FinanceRecord {
+  id              String            @id @default(uuid())
+  title           String
+  description     String?
+  amount          Float
+  type            FinanceType       // INCOME, EXPENSE, BUDGET
+  category        String            // Logistics, Refreshments, Transport, Medical, Printing, Awards
+  academicYear    String            @default("2025-2026")
+  receiptUrl      String?
+  departmentId    String?
+  createdById     String
+  department      Department?       @relation(fields: [departmentId], references: [id])
+  createdBy       User              @relation(fields: [createdById], references: [id])
+  createdAt       DateTime          @default(now())
+}
+```
+
+---
+
+## 6. API Route Specifications
+
+| Endpoint | Method | Allowed Roles | Description |
+|:---|:---:|:---:|:---|
+| `/api/auth/me` | `GET` | Authenticated | Fetch current user session, profile, and role relations |
+| `/api/auth/login` | `POST` | Public | Authenticate user credentials & set JWT session cookie |
+| `/api/auth/signup` | `POST` | Public | Register new student or faculty account |
+| `/api/monitoring/academic-years` | `GET` | `ADMIN`, `FACULTY` | Multi-year volunteer hours, event trends & department rankings |
+| `/api/finance` | `GET`, `POST`, `DELETE` | `ADMIN`, `FACULTY` | Financial transactions, YoY summaries, category breakdown & receipt audit |
+| `/api/events` | `GET`, `POST` | Authenticated | Browse events with unit filters, post new campaigns |
+| `/api/events/[id]` | `GET`, `PUT`, `DELETE` | `ADMIN`, `FACULTY`, `COORDINATOR` | Event detail manager, status updater, attendance viewer |
+| `/api/events/[id]/photos` | `POST`, `DELETE` | `ADMIN`, `FACULTY`, `COORDINATOR` | Upload and manage event campaign photos & captions |
+| `/api/events/[id]/register` | `POST`, `DELETE` | `STUDENT` | Volunteer registration & cancellation for drives |
+| `/api/events/[id]/attendance` | `POST` | Authenticated | Verify and mark attendance (QR code validation) |
+| `/api/forms` | `GET`, `POST` | Authenticated | Browse active forms, create dynamic custom surveys |
+| `/api/forms/[formId]/responses` | `GET`, `POST` | Authenticated | Submit responses, review volunteer form submissions |
+| `/api/faculty-desk` | `GET`, `POST`, `PUT`, `DELETE` | Public / `ADMIN` | Public faculty leadership directory & admin management |
+| `/api/visitor` | `GET` | Public | Public stats, volunteer directory, photo feed & drives |
+| `/api/issues` | `GET`, `POST`, `PUT` | Authenticated | Submit grievance, resolve ticket status (`SOLVED`/`NOT_SOLVED`) |
+| `/api/backup/export` | `GET` | `ADMIN`, `FACULTY` | Export database collections as JSON or CSV |
+
+---
+
+## 7. Deployment & Environment Setup Guide
+
+### 1. Prerequisites:
+* **Node.js**: v18.18.0 or v20+ LTS
+* **Package Manager**: `npm`
+* **Database**: PostgreSQL (Supabase or standard PostgreSQL instance)
+
+### 2. Environment Configuration (`.env.local`):
+```env
+# Database Connection (Supabase Transaction Pooler)
+DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+
+# Supabase Credentials
+NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT_REF].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="[YOUR_ANON_KEY]"
+SUPABASE_SERVICE_ROLE_KEY="[YOUR_SERVICE_ROLE_KEY]"
+
+# Google OAuth 2.0 Credentials
+NEXT_PUBLIC_GOOGLE_CLIENT_ID="[GOOGLE_CLIENT_ID].apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="[GOOGLE_CLIENT_SECRET]"
+
+# Application URL
+NEXT_PUBLIC_APP_URL="https://erp-tan-six.vercel.app"
+NEXTAUTH_SECRET="[STRONG_RANDOM_SECRET_KEY]"
+```
+
+### 3. Setup Commands:
+```bash
+# 1. Clone repository
+git clone https://github.com/Bhuvan2402-bhuvan/erp1.git
+cd erp1
+
+# 2. Install dependencies
+npm install
+
+# 3. Generate Prisma client & sync schema
+npx prisma generate
+npx prisma db push
+
+# 4. Run local development server
+npm run dev
+```
+
+### 4. Production Deployment on Vercel:
+```bash
+# Deploy to Vercel production
+vercel deploy --prod
+```
+
+---
+
+## 8. Test Accounts & Access Roster
+
+| Role | Email Address | Default Password | Scope / Permissions |
+|:---|:---|:---|:---|
+| **System Admin 1** | `admin1@erp.com` | `Admin@12345` | Full Platform & User Authority |
+| **System Admin 2** | `admin2@erp.com` | `Admin@12345` | Institutional Operations & Finance |
+| **Faculty Coordinator (CSE)** | `faculty.cse@erp.com` | `Faculty@12345` | CSE Unit Coordinator & Drive Manager |
+| **Faculty Coordinator (ECE)** | `faculty.ece@erp.com` | `Faculty@12345` | ECE Unit Coordinator & Drive Manager |
+| **Faculty Coordinator (MECH)** | `faculty.mech@erp.com` | `Faculty@12345` | MECH Unit Coordinator & Drive Manager |
+| **Student Coordinator** | `lead.cse1@erp.com` | `Student@12345` | Student Branch Lead (CSE) |
+| **Student Volunteer** | `student.cse1@erp.com` | `Student@12345` | Standard Volunteer Account (CSE) |
+
+---
+
+*© 2026 VVITU NSS ERP • Developed for Vasireddy Venkatadri Institute of Technology (Autonomous).*
