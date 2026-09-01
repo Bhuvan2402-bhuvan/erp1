@@ -117,7 +117,6 @@ export async function GET(request) {
         },
         select: {
           id: true,
-          hours: true,
           studentId: true,
           event: {
             select: {
@@ -148,7 +147,7 @@ export async function GET(request) {
 
     // Compute service hours
     const totalAttendanceCount = attendances.length;
-    const computedLoggedHours = attendances.reduce((acc, curr) => acc + (curr.hours || 3), 0);
+    const computedLoggedHours = totalAttendanceCount * 3;
     const totalServiceHours = (totalVolunteers * 10) + computedLoggedHours;
 
     // Event type breakdown
