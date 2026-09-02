@@ -69,6 +69,7 @@ export const PUT = withAuth(async (req, { params, user }) => {
 
     // Update base user details
     const userUpdateData = {};
+    if (data.name !== undefined) userUpdateData.name = data.name;
     if (data.approvalStatus !== undefined) userUpdateData.approvalStatus = data.approvalStatus;
     if (data.isBlocked !== undefined) userUpdateData.isBlocked = data.isBlocked;
     if (data.departmentId !== undefined) userUpdateData.departmentId = data.departmentId && data.departmentId !== '' ? data.departmentId : null;
