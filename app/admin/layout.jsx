@@ -25,6 +25,7 @@ export default async function AdminLayout({ children }) {
     { id: 'volunteers', name: 'Volunteers', href: '/admin/volunteers', basePath: '/admin/volunteers', icon: 'Users' },
     { id: 'faculty', name: 'Faculty', href: '/admin/faculty', basePath: '/admin/faculty', icon: 'GraduationCap' },
     { id: 'faculty-desk', name: 'Faculty Desk', href: '/admin/faculty-desk', basePath: '/admin/faculty-desk', icon: 'Award' },
+    { id: 'villages', name: 'Villages', href: '/admin/villages', basePath: '/admin/villages', icon: 'MapPin' },
     { id: 'events', name: 'Events', href: '/admin/events', basePath: '/admin/events', icon: 'Calendar' },
     { id: 'attendance', name: 'Attendance', href: '/admin/attendance', basePath: '/admin/attendance', icon: 'ClipboardList' },
     { id: 'finance', name: 'Finance & Audit', href: '/admin/finance', basePath: '/admin/finance', icon: 'Award' },

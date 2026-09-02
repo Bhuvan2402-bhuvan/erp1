@@ -3,7 +3,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  LogOut, Menu, X, Download,
+  LogOut, Menu, X, Download, MapPin, TrendingUp,
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
   GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity,
   FileText, ClipboardCheck, PlusCircle, Inbox, CheckSquare, Send, ChevronRight
@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react';
 const iconMap = {
   LayoutDashboard, Users, Calendar, AlertTriangle, MessageSquare, Megaphone,
   GraduationCap, BookOpen, UserCircle, FolderOpen, ClipboardList, Award, UserCheck, Quote, Activity,
-  FileText, ClipboardCheck, PlusCircle, Inbox, CheckSquare, Send, ChevronRight, Download
+  FileText, ClipboardCheck, PlusCircle, Inbox, CheckSquare, Send, ChevronRight, Download, MapPin, TrendingUp
 };
 
 export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, children }) {
@@ -78,17 +78,17 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex relative overflow-x-hidden">
+    <div className="h-screen w-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex overflow-hidden relative">
       {/* Decorative Grid Overlay & Background Glowing Orbs */}
       <div className="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none z-0" />
       <div className="absolute top-0 right-0 w-[450px] h-[450px] rounded-full bg-logo-teal/10 dark:bg-logo-teal/5 blur-[80px] transform-gpu pointer-events-none -z-10" />
       <div className="absolute bottom-0 left-0 w-[450px] h-[450px] rounded-full bg-logo-green/10 dark:bg-logo-green/5 blur-[90px] transform-gpu pointer-events-none -z-10" />
 
-      {/* Desktop Sidebar (visible on md+) */}
-      <aside className="hidden md:flex w-72 border-r border-slate-200/60 dark:border-slate-800/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md flex-col justify-between sticky top-0 h-screen z-20 shrink-0">
+      {/* Desktop Sidebar (visible on md+) — stays permanently fixed and still */}
+      <aside className="hidden md:flex w-72 h-screen border-r border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md flex-col justify-between shrink-0 z-20">
         <div className="flex flex-col flex-1 min-h-0">
           {/* Brand Header */}
-          <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center gap-2 text-center">
+          <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 flex flex-col items-center gap-2 text-center shrink-0">
             <div className="flex items-center justify-center gap-2">
               <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={80} height={40} className="h-10 w-auto object-contain rounded" />
               <div className="h-6 w-px bg-slate-300 dark:bg-slate-700" />
@@ -100,7 +100,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
           </div>
 
           {/* User Profile Info */}
-          <div className="p-5 border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20">
+          <div className="p-5 border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/20 shrink-0">
             <div className="flex items-center gap-3">
               {dbUser?.avatarUrl ? (
                 <Image src={dbUser.avatarUrl} alt={dbUser.name} width={40} height={40} className="w-10 h-10 rounded-full object-cover shadow-sm" />
@@ -121,14 +121,14 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
             )}
           </div>
 
-          {/* Navigation Items */}
+          {/* Navigation Items — scrolls independently if tabs exceed height */}
           <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
             <NavItems />
           </nav>
         </div>
 
         {/* Sidebar Footer Actions */}
-        <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 space-y-2">
+        <div className="p-4 border-t border-slate-200/50 dark:border-slate-800/50 space-y-2 shrink-0">
           {deferredPrompt && (
             <button
               onClick={handleInstallApp}
@@ -165,7 +165,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
         }`}
       >
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <Image src="/vvit-logo.jpg" alt="VVIT Logo" width={60} height={30} className="h-8 w-auto object-contain rounded" />
               <div className="h-5 w-px bg-slate-300 dark:bg-slate-700" />
@@ -179,7 +179,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
             </button>
           </div>
 
-          <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/10">
+          <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-logo-navy to-logo-teal text-white font-bold flex items-center justify-center text-sm">
                 {initials}
@@ -196,7 +196,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
           </nav>
         </div>
 
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2 shrink-0">
           {deferredPrompt && (
             <button
               onClick={handleInstallApp}
@@ -218,10 +218,10 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
         </div>
       </aside>
 
-      {/* Main Panel Wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+      {/* Main Panel Wrapper (Independent Scroll Container) */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto relative z-10">
         {/* Mobile Header Bar */}
-        <header className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+        <header className="md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -240,7 +240,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
         </header>
 
         {/* Dashboard Title Section (Desktop only, as title is inside header on mobile) */}
-        <div className="hidden md:block px-8 pt-8 pb-4">
+        <div className="hidden md:block px-8 pt-8 pb-4 shrink-0">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
@@ -254,7 +254,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
         </div>
 
         {/* Content Body */}
-        <main className="p-4 sm:p-8 flex-1 overflow-y-auto">
+        <main className="p-4 sm:p-8 flex-1 pb-16">
           {children}
         </main>
       </div>

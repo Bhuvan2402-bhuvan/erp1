@@ -310,8 +310,8 @@ export default async function Home() {
                   </a>
                 </div>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {poLeaders.slice(0, 4).map((po) => (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {poLeaders.map((po) => (
                     <div
                       key={po.id}
                       className="bg-slate-50 dark:bg-slate-800/80 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:border-logo-teal/30 transition flex flex-col justify-between space-y-4 group"

@@ -20,6 +20,7 @@ export default async function FacultyLayout({ children }) {
   const tabs = [
     { id: 'branch', name: 'My Branch', href: '/faculty/branch', basePath: '/faculty', icon: 'Users' },
     { id: 'monitoring', name: 'AY Monitoring', href: '/faculty/monitoring', basePath: '/faculty/monitoring', icon: 'TrendingUp' },
+    { id: 'villages', name: 'Village Reports', href: '/faculty/villages', basePath: '/faculty/villages', icon: 'MapPin' },
     { id: 'events', name: 'Events', href: '/faculty/events', basePath: '/faculty/events', icon: 'Calendar' },
     { id: 'attendance', name: 'Attendance', href: '/faculty/attendance', basePath: '/faculty/attendance', icon: 'ClipboardList' },
     { id: 'finance', name: 'Finance & Audit', href: '/faculty/finance', basePath: '/faculty/finance', icon: 'Award' },

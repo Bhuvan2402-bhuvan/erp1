@@ -71,7 +71,7 @@ export const PUT = withAuth(async (req, { params, user }) => {
     const userUpdateData = {};
     if (data.approvalStatus !== undefined) userUpdateData.approvalStatus = data.approvalStatus;
     if (data.isBlocked !== undefined) userUpdateData.isBlocked = data.isBlocked;
-    if (data.departmentId !== undefined) userUpdateData.departmentId = data.departmentId;
+    if (data.departmentId !== undefined) userUpdateData.departmentId = data.departmentId && data.departmentId !== '' ? data.departmentId : null;
 
     if (Object.keys(userUpdateData).length > 0) {
       const updatedUser = await prisma.user.update({ where: { id }, data: userUpdateData });
@@ -82,7 +82,10 @@ export const PUT = withAuth(async (req, { params, user }) => {
       if (data.departmentId !== undefined) {
         const studentRecord = await prisma.student.findUnique({ where: { userId: id } });
         if (studentRecord) {
-          await prisma.student.update({ where: { id: studentRecord.id }, data: { departmentId: data.departmentId } });
+          await prisma.student.update({
+            where: { id: studentRecord.id },
+            data: { departmentId: data.departmentId && data.departmentId !== '' ? data.departmentId : null }
+          });
         }
       }
     }
@@ -98,7 +101,7 @@ export const PUT = withAuth(async (req, { params, user }) => {
           }
         }
         const studentUpdateData = {};
-        if (data.mentorId !== undefined) studentUpdateData.mentorId = data.mentorId === 'null' ? null : data.mentorId;
+        if (data.mentorId !== undefined) studentUpdateData.mentorId = (!data.mentorId || data.mentorId === 'null' || data.mentorId === '') ? null : data.mentorId;
         if (data.isCoordinator !== undefined) studentUpdateData.isCoordinator = data.isCoordinator;
         await prisma.student.update({ where: { id: student.id }, data: studentUpdateData });
       }
@@ -106,13 +109,19 @@ export const PUT = withAuth(async (req, { params, user }) => {
 
     // Faculty-specific: department/branch assignment
     if (data.facultyDepartmentId !== undefined) {
+      const targetDeptId = data.facultyDepartmentId && data.facultyDepartmentId !== '' ? data.facultyDepartmentId : null;
       const faculty = await prisma.faculty.findUnique({ where: { userId: id } });
       if (faculty) {
         await prisma.faculty.update({
           where: { id: faculty.id },
-          data: { departmentId: data.facultyDepartmentId }
+          data: { departmentId: targetDeptId }
         });
       }
+      // Also sync user.departmentId
+      await prisma.user.update({
+        where: { id },
+        data: { departmentId: targetDeptId }
+      });
     }
 
     // Fire and forget webhook sync

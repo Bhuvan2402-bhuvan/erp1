@@ -33,12 +33,21 @@ export default function AdminFaculty() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleUpdateUser = async (userId, updateData) => {
-    const res = await fetch(`/api/users/${userId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
-    if (res.ok) {
-      toast.success('Updated successfully');
-      fetchData();
-    } else {
-      toast.error('Failed to update');
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (updateData.facultyDepartmentId !== undefined) {
+          toast.success(updateData.facultyDepartmentId ? 'Branch assigned successfully' : 'Branch unassigned');
+        } else {
+          toast.success('Updated successfully');
+        }
+        fetchData();
+      } else {
+        toast.error(data.message || 'Failed to update');
+      }
+    } catch {
+      toast.error('Network error updating faculty');
     }
   };
 

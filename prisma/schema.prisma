@@ -106,6 +106,8 @@ model User {
   formResponses     FormResponse[]
   formResponseNotes FormResponseNote[]
   formAuditLogs     FormAuditLog[]
+  // Villages
+  villageReports    VillageWeeklyReport[]
 
   @@index([email])
   @@index([role])
@@ -127,6 +129,7 @@ model Department {
   financeRecords FinanceRecord[]
   forms          Form[]
   formAccess     FormAccess[]
+  adoptedVillages AdoptedVillage[]
 
   @@index([code])
   @@map("departments")
@@ -173,13 +176,14 @@ model Faculty {
   userId       String   @unique
   employeeId   String   @unique
   designation  String?
-  departmentId String
+  departmentId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  department Department @relation(fields: [departmentId], references: [id])
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
   mentees  Student[]
+  adoptedVillages AdoptedVillage[]
 
   @@index([employeeId])
   @@index([departmentId])
@@ -621,4 +625,52 @@ model FormAuditLog {
   @@index([userId])
   @@index([action])
   @@map("form_audit_logs")
+}
+
+// ─── Village Adoption & Weekly Reports ──────────────────────
+
+model AdoptedVillage {
+  id            String   @id @default(uuid())
+  name          String
+  district      String
+  description   String?
+  departmentId  String
+  facultyId     String
+  adoptedDate   DateTime @default(now())
+  status        String   @default("ACTIVE") // ACTIVE, COMPLETED, INACTIVE
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  department    Department          @relation(fields: [departmentId], references: [id])
+  faculty       Faculty             @relation(fields: [facultyId], references: [id])
+  weeklyReports VillageWeeklyReport[]
+
+  @@index([departmentId])
+  @@index([facultyId])
+  @@index([status])
+  @@map("adopted_villages")
+}
+
+model VillageWeeklyReport {
+  id                String   @id @default(uuid())
+  villageId         String
+  submittedById     String
+  weekStartDate     DateTime
+  weekEndDate       DateTime
+  activitiesDone    String
+  volunteersInvolved Int     @default(0)
+  challengesFaced   String?
+  nextWeekPlan      String?
+  status            String   @default("SUBMITTED") // DRAFT, SUBMITTED, REVIEWED
+  adminRemarks      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  village       AdoptedVillage @relation(fields: [villageId], references: [id], onDelete: Cascade)
+  submittedBy   User           @relation(fields: [submittedById], references: [id])
+
+  @@index([villageId])
+  @@index([submittedById])
+  @@index([weekStartDate])
+  @@map("village_weekly_reports")
 }
