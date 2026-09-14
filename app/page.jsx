@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic';
+// Enable Incremental Static Regeneration (ISR) - cached at edge, background revalidated every 60s
+export const revalidate = 60;
 
 import Link from 'next/link';
 import Image from 'next/image';

@@ -29,7 +29,8 @@ export async function GET(req) {
       achievements: Array.isArray(p.achievements) ? p.achievements : []
     }));
 
-    return NextResponse.json({ profiles: formatted }, { status: 200 });
+    const headers = showAll ? {} : { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' };
+    return NextResponse.json({ profiles: formatted }, { status: 200, headers });
   } catch (error) {
     return sanitizeErrorResponse(error, 'Error fetching faculty desk profiles');
   }

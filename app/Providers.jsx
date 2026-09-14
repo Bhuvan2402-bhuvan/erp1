@@ -14,13 +14,6 @@ export default function Providers({ children }) {
           }
         }).catch(() => {});
       }
-      if ('caches' in window) {
-        caches.keys().then((keys) => {
-          for (let key of keys) {
-            caches.delete(key);
-          }
-        }).catch(() => {});
-      }
     }
   }, []);
 

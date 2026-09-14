@@ -1,11 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Compress responses with gzip
+  // Compress responses with gzip / brotli
   compress: true,
+  poweredByHeader: false,
 
-  // Optimize images served through next/image
+  // Strips debug console calls in production builds to reduce bundle payload
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
+
+  // Optimize images served through next/image (AVIF delivers up to 50% smaller payloads than WebP)
   images: {
-    formats: ['image/webp'],
+    formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 86400,
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -34,9 +40,15 @@ const nextConfig = {
   // Strict mode catches bugs and reduces re-renders in development
   reactStrictMode: true,
 
-  // Optimize package imports to tree-shake unused icons
+  // Optimize package imports to tree-shake heavy UI and animation libraries
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+      '@dnd-kit/utilities',
+    ],
   },
 
   // Security headers applied to all routes
