@@ -174,8 +174,8 @@ export default function AdminFacultyDesk() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold">NSS Faculty Desk</h2>
-          <p className="text-slate-500 text-sm mt-1">Manage Program Officers (POs) & Program Coordinator (PC) profiles & forewords for the visitor page.</p>
+          <h2 className="text-3xl font-bold">NSS Faculty &amp; Coordinator Desk</h2>
+          <p className="text-slate-500 text-sm mt-1">Manage Program Coordinator (PC), Program Officers (POs) &amp; Student Coordinators (SC) profiles for the visitor page.</p>
         </div>
         <button
           onClick={openCreate}
@@ -198,8 +198,8 @@ export default function AdminFacultyDesk() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className={labelClass}>Faculty Name *</label>
-              <input className={inputClass} placeholder="e.g. Dr. K. Srinivasan" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <label className={labelClass}>{form.role === 'NSS_SC' ? 'Student Name *' : 'Faculty Name *'}</label>
+              <input className={inputClass} placeholder={form.role === 'NSS_SC' ? 'e.g. K. Bhuvana' : 'e.g. Dr. K. Srinivasan'} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
             </div>
 
             <div>
@@ -207,21 +207,22 @@ export default function AdminFacultyDesk() {
               <select className={inputClass} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
                 <option value="NSS_PO">NSS Program Officer (PO)</option>
                 <option value="NSS_PC">NSS Program Coordinator (PC - Main)</option>
+                <option value="NSS_SC">NSS Student Coordinator (SC)</option>
               </select>
             </div>
 
             <div>
               <label className={labelClass}>Designation *</label>
-              <input className={inputClass} placeholder="e.g. Associate Professor & NSS PO" value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value }))} />
+              <input className={inputClass} placeholder={form.role === 'NSS_SC' ? 'e.g. NSS Student Coordinator, CSE 3rd Year' : 'e.g. Associate Professor & NSS PO'} value={form.designation} onChange={e => setForm(f => ({ ...f, designation: e.target.value }))} />
             </div>
 
             <div>
               <label className={labelClass}>Branch / Department *</label>
-              <input className={inputClass} placeholder="e.g. CSE Department" value={form.branch} onChange={e => setForm(f => ({ ...f, branch: e.target.value }))} />
+              <input className={inputClass} placeholder={form.role === 'NSS_SC' ? 'e.g. CSE Department, 3rd Year' : 'e.g. CSE Department'} value={form.branch} onChange={e => setForm(f => ({ ...f, branch: e.target.value }))} />
             </div>
 
             <div className="sm:col-span-2 space-y-2">
-              <label className={labelClass}>Faculty Profile Picture</label>
+              <label className={labelClass}>{form.role === 'NSS_SC' ? 'Profile Picture' : 'Faculty Profile Picture'}</label>
               <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700">
                 {form.photoUrl ? (
                   <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-logo-teal shadow-sm shrink-0 bg-slate-200 dark:bg-slate-800">
@@ -347,8 +348,8 @@ export default function AdminFacultyDesk() {
         ) : profiles.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Shield className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto" />
-            <p className="text-slate-400 font-medium">No faculty desk profiles added yet</p>
-            <p className="text-slate-400 text-sm">Click &ldquo;Add Faculty Desk Profile&rdquo; to post Program Officer (PO) & Coordinator (PC) forewords.</p>
+            <p className="text-slate-400 font-medium">No desk profiles added yet</p>
+            <p className="text-slate-400 text-sm">Click &ldquo;Add Faculty Desk Profile&rdquo; to post PC, PO &amp; Student Coordinator (SC) profiles.</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -371,6 +372,10 @@ export default function AdminFacultyDesk() {
                       {p.role === 'NSS_PC' ? (
                         <span className="px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-extrabold flex items-center gap-1 border border-purple-200">
                           <Star className="w-3 h-3 fill-current" /> Main NSS PC
+                        </span>
+                      ) : p.role === 'NSS_SC' ? (
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-200">
+                          NSS Student Coordinator
                         </span>
                       ) : (
                         <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold">

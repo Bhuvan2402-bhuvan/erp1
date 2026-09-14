@@ -57,7 +57,7 @@ export default function DashboardLayout({ dbUser, tabs, title, subtitle, badge, 
     <div className="space-y-1">
       {tabs.map(tab => {
         const Icon = iconMap[tab.icon] || FolderOpen;
-        const isActive = pathname.startsWith(tab.href) || (pathname === tab.basePath && tab.href === tab.basePath);
+        const isActive = pathname === tab.href || pathname.startsWith(tab.href + '/');
         return (
           <Link
             key={tab.id}

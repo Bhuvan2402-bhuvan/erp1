@@ -8,7 +8,7 @@ import {
   MapPin, Eye, X, Star, Heart, MessageCircle, Bookmark, Share2, Shield, UserCheck, Sparkles, Building2, Users
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
-import { DEFAULT_FACULTY_PROFILES } from '@/lib/faculty-defaults';
+
 
 function VisitorContent() {
   const searchParams = useSearchParams();
@@ -21,7 +21,7 @@ function VisitorContent() {
   const [departments, setDepartments] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [events, setEvents] = useState([]);
-  const [facultyDesk, setFacultyDesk] = useState(DEFAULT_FACULTY_PROFILES);
+  const [facultyDesk, setFacultyDesk] = useState([]);
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,7 +43,7 @@ function VisitorContent() {
         if (data.departments) setDepartments(data.departments);
         if (data.photos) setPhotos(data.photos);
         if (data.events) setEvents(data.events);
-        if (data.facultyDesk && data.facultyDesk.length > 0) {
+        if (data.facultyDesk) {
           setFacultyDesk(data.facultyDesk);
         }
       })
@@ -80,7 +80,8 @@ function VisitorContent() {
   });
 
   const pcProfile = filteredFaculty.find(f => f.role === 'NSS_PC') || facultyDesk.find(f => f.role === 'NSS_PC');
-  const poProfiles = filteredFaculty.filter(f => f.role !== 'NSS_PC');
+  const poProfiles = filteredFaculty.filter(f => f.role === 'NSS_PO');
+  const scProfiles = filteredFaculty.filter(f => f.role === 'NSS_SC');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans relative overflow-x-hidden">
@@ -513,6 +514,64 @@ function VisitorContent() {
                 </div>
               )}
             </div>
+
+            {/* ── STUDENT COORDINATORS SECTION ── */}
+            {scProfiles.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-emerald-500" />
+                      Student Coordinators
+                      <span className="ml-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-extrabold border border-emerald-200 dark:border-emerald-800">
+                        {scProfiles.length}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Student leaders coordinating NSS activities and volunteering efforts.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {scProfiles.map(sc => (
+                    <div key={sc.id} className="bg-white dark:bg-slate-800 rounded-3xl border border-emerald-200/60 dark:border-emerald-900/40 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-logo-teal text-white flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden shadow-sm">
+                          {sc.photoUrl ? (
+                            <Image src={sc.photoUrl} alt={sc.name} width={64} height={64} className="w-full h-full object-cover" unoptimized />
+                          ) : (
+                            sc.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            NSS Student Coordinator
+                          </span>
+                          <h4 className="font-bold text-slate-900 dark:text-white text-base mt-1">{sc.name}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{sc.designation}</p>
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{sc.branch}</p>
+                        </div>
+                      </div>
+
+                      {/* Foreword quote */}
+                      <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/40">
+                        <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed">&ldquo;{sc.foreword}&rdquo;</p>
+                      </div>
+
+                      {/* Achievements */}
+                      {Array.isArray(sc.achievements) && sc.achievements.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {sc.achievements.map((ach, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40 rounded-lg text-[11px]">
+                              <Award className="w-3 h-3 text-emerald-500" /> {ach}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ── ACADEMIC DEPARTMENTS & VOLUNTEER DIRECTORY ── */}
             <div className="pt-8 border-t border-slate-200/60 dark:border-slate-800/60 space-y-4">

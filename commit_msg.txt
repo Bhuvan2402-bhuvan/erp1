@@ -1,0 +1,9 @@
+feat: Student Coordinators desk, live visitor data, sidebar nav fix
+
+- Add NSS_SC role to FacultyDesk admin panel with context-aware form labels
+- New Student Coordinators section on /visitor?tab=faculty, same card size as PO cards
+- Visitor page now always fetches live DB data, removed hardcoded DEFAULT_FACULTY_PROFILES fallback
+- Fix sidebar nav highlight bug: path boundary matching prevents /admin/faculty-desk from lighting up /admin/faculty
+- API routes POST and PATCH updated to accept NSS_SC role value
+- Sort order in visitor API: NSS_PC first, NSS_PO second, NSS_SC last
+- README updated with Student Coordinators feature docs and recent changes table

@@ -17,7 +17,7 @@ export const PATCH = withAuth(async (req, { params, user }) => {
 
     const updateData = {};
     if (body.name !== undefined) updateData.name = body.name;
-    if (body.role !== undefined) updateData.role = body.role === 'NSS_PC' ? 'NSS_PC' : 'NSS_PO';
+    if (body.role !== undefined) updateData.role = ['NSS_PC', 'NSS_SC'].includes(body.role) ? body.role : 'NSS_PO';
     if (body.designation !== undefined) updateData.designation = body.designation;
     if (body.branch !== undefined) updateData.branch = body.branch;
     if (body.foreword !== undefined) updateData.foreword = body.foreword;

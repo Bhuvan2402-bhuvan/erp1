@@ -60,7 +60,7 @@ export const POST = withAuth(async (req, { user }) => {
     const profile = await prisma.facultyDesk.create({
       data: {
         name,
-        role: role === 'NSS_PC' ? 'NSS_PC' : 'NSS_PO',
+        role: ['NSS_PC', 'NSS_SC'].includes(role) ? role : 'NSS_PO',
         designation,
         branch,
         foreword,

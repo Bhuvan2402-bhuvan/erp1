@@ -37,9 +37,11 @@
 * Built-in mobile camera scanner for instant physical presence verification.
 * Automated service hour calculation (+3 verified hours per camp) and anti-proxy tamper resistance.
 
-### 5. 🏛️ Faculty Desk & Leadership Directory (`/visitor?tab=faculty` & `/admin/faculty-desk`)
-* Program Coordinator (PC) spotlight with vision, profile image, and forewords.
-* Program Officers (POs) directory across all academic branches.
+### 5. 🏛️ Faculty & Coordinator Desk (`/visitor?tab=faculty` & `/admin/faculty-desk`)
+* **Program Coordinator (PC)** spotlight with vision foreword, profile image, and achievements.
+* **Program Officers (POs)** directory across all academic branches with foreword quotes.
+* **Student Coordinators (SC)** — new dedicated section listing NSS student leaders with their forewords and achievements, fully managed from the admin panel.
+* All three tiers (PC → PO → SC) are managed from a single admin panel (`/admin/faculty-desk`) and reflected live on the visitor page.
 * Public visitor directory showcasing verified volunteer counts, drive memories, and live statistics.
 
 ### 6. 📝 Dynamic Custom Form Builder & Workflow Approvals (`/faculty/forms` & `/student/forms`)
@@ -48,6 +50,16 @@
 * Visual submission analytics and 1-click export to `.xlsx` Excel spreadsheets.
 
 ---
+
+## 🆕 Recent Updates
+
+| Date | Change |
+|:---|:---|
+| Sep 2026 | **Student Coordinators Desk** — Added `NSS_SC` role to `FacultyDesk` model. Admin can now create/edit/hide Student Coordinator profiles that appear in a dedicated section on the public visitor page alongside PC and PO profiles. |
+| Sep 2026 | **Live Faculty Desk** — Visitor page now always fetches faculty profiles from the database; hardcoded sample fallback removed entirely. |
+| Sep 2026 | **Sidebar nav highlight fix** — `/admin/faculty-desk` no longer incorrectly highlights the "Faculty" nav item (path boundary matching fixed). |
+
+
 
 ## 🛠️ Technology Stack & Architecture
 

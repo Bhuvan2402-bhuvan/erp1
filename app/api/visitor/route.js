@@ -107,10 +107,11 @@ export async function GET() {
       departmentCode: e.createdBy?.department?.code || 'NSS'
     }));
 
-    // Sort faculty profiles: PC first, POs second
+    const roleOrder = { NSS_PC: 0, NSS_PO: 1, NSS_SC: 2 };
     const sortedFaculty = facultyProfiles.sort((a, b) => {
-      if (a.role === 'NSS_PC' && b.role !== 'NSS_PC') return -1;
-      if (a.role !== 'NSS_PC' && b.role === 'NSS_PC') return 1;
+      const ra = roleOrder[a.role] ?? 1;
+      const rb = roleOrder[b.role] ?? 1;
+      if (ra !== rb) return ra - rb;
       return (a.sortOrder || 0) - (b.sortOrder || 0);
     }).map(p => ({
       ...p,
