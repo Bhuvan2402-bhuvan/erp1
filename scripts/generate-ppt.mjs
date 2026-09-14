@@ -812,17 +812,17 @@ async function buildOptimizedPresentation() {
     line: { color: C_TEAL, width: 1.25 },
     rectRadius: 0.2
   });
-  s12.addText('🔑 Pre-Configured Demo Accounts Roster', {
+  s12.addText('🔑 Role Governance & Institutional Access', {
     x: 7.05, y: 1.55, w: 5.4, h: 0.35,
     fontSize: 12, bold: true, color: C_TEAL, fontFace: FONT_HEADING
   });
   const demoAccounts = [
-    '• System Admin 1: admin1@erp.com / Admin@12345 (Master Authority)',
-    '• System Admin 2: admin2@erp.com / Admin@12345 (Operations & Finance)',
-    '• Faculty Coordinator (CSE): faculty.cse@erp.com / Faculty@12345',
-    '• Faculty Coordinator (ECE): faculty.ece@erp.com / Faculty@12345',
-    '• Student Coordinator: lead.cse1@erp.com / Student@12345 (CSE Lead)',
-    '• Student Volunteer: student.cse1@erp.com / Student@12345 (Volunteer)',
+    '• System Admin: Max 4 Accounts (Master Authority & Audits)',
+    '• Faculty Coordinator: Max 15 Accounts (Operations & Unit Ledgers)',
+    '• Student Coordinator: Max 20 Accounts (Branch Leads & Points)',
+    '• Student Volunteer: Open Registration (QR Attendance & Portfolio)',
+    '• Public Directory: Unauthenticated Guest Access',
+    '• Security: All credentials managed via private institutional vaults',
     '• Production URL: https://erp-tan-six.vercel.app'
   ];
   s12.addText(demoAccounts.join('\n\n'), {

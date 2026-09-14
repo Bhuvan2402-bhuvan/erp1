@@ -29,22 +29,28 @@ async function main() {
   const cseDept = await prisma.department.findUnique({ where: { code: 'CSE' } });
 
   // 2. Build Account List
+  const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'DevDemoPass@123!';
   const accountsToProvision = [
     // Main Admin
-    { email: 'admin@vvitnss.in', password: 'AdminNss@2026!', name: 'VVIT NSS Lead Administrator', role: 'ADMIN' },
+    {
+      email: process.env.INITIAL_ADMIN_EMAIL || 'admin@vvitnss.edu.in',
+      password: process.env.INITIAL_ADMIN_PASSWORD || defaultPassword,
+      name: 'VVIT NSS Lead Administrator',
+      role: 'ADMIN'
+    },
 
     // Administrator Accounts (1-4)
-    { email: 'admin1@erp.com', password: 'AdminPass1!', name: 'Admin Lead 1', role: 'ADMIN' },
-    { email: 'admin2@erp.com', password: 'AdminPass2!', name: 'Admin Lead 2', role: 'ADMIN' },
-    { email: 'admin3@erp.com', password: 'AdminPass3!', name: 'Admin Lead 3', role: 'ADMIN' },
-    { email: 'admin4@erp.com', password: 'AdminPass4!', name: 'Admin Lead 4', role: 'ADMIN' },
+    { email: 'admin1@erp.local', password: defaultPassword, name: 'Admin Lead 1', role: 'ADMIN' },
+    { email: 'admin2@erp.local', password: defaultPassword, name: 'Admin Lead 2', role: 'ADMIN' },
+    { email: 'admin3@erp.local', password: defaultPassword, name: 'Admin Lead 3', role: 'ADMIN' },
+    { email: 'admin4@erp.local', password: defaultPassword, name: 'Admin Lead 4', role: 'ADMIN' },
   ];
 
   // Faculty Coordinator Accounts (1-15)
   for (let i = 1; i <= 15; i++) {
     accountsToProvision.push({
-      email: `faculty${i}@erp.com`,
-      password: `FacultyPass${i}!`,
+      email: `faculty${i}@erp.local`,
+      password: defaultPassword,
       name: `Faculty Coordinator ${i}`,
       role: 'FACULTY',
       employeeId: `FAC10${i < 10 ? '0' + i : i}`,
@@ -55,8 +61,8 @@ async function main() {
   // Student Coordinator Accounts (1-20)
   for (let i = 1; i <= 20; i++) {
     accountsToProvision.push({
-      email: `coord${i}@erp.com`,
-      password: `CoordPass${i}!`,
+      email: `coord${i}@erp.local`,
+      password: defaultPassword,
       name: `Student Coordinator ${i}`,
       role: 'STUDENT',
       isCoordinator: true,
@@ -67,8 +73,8 @@ async function main() {
   // Volunteer Student Accounts (1-5)
   for (let i = 1; i <= 5; i++) {
     accountsToProvision.push({
-      email: `volunteer${i}@erp.com`,
-      password: `VolunteerPass${i}!`,
+      email: `volunteer${i}@erp.local`,
+      password: defaultPassword,
       name: `Student Volunteer ${i}`,
       role: 'STUDENT',
       isCoordinator: false,

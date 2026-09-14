@@ -35,11 +35,13 @@ const prisma = new PrismaClient();
 
 const accounts = [];
 
+const defaultPassword = process.env.INITIAL_ACCOUNT_PASSWORD || 'DevDemoPass@123!';
+
 // 1. Admins (4)
 for (let i = 1; i <= 4; i++) {
   accounts.push({
-    email: `admin${i}@erp.com`,
-    password: `AdminPass${i}!`,
+    email: `admin${i}@erp.local`,
+    password: defaultPassword,
     name: `NSS Lead Admin ${i}`,
     role: 'ADMIN'
   });
@@ -48,8 +50,8 @@ for (let i = 1; i <= 4; i++) {
 // 2. Faculty Coordinators (15)
 for (let i = 1; i <= 15; i++) {
   accounts.push({
-    email: `faculty${i}@erp.com`,
-    password: `FacultyPass${i}!`,
+    email: `faculty${i}@erp.local`,
+    password: defaultPassword,
     name: `Faculty Coordinator ${i}`,
     role: 'FACULTY'
   });
@@ -58,8 +60,8 @@ for (let i = 1; i <= 15; i++) {
 // 3. Student Coordinators (20)
 for (let i = 1; i <= 20; i++) {
   accounts.push({
-    email: `coord${i}@erp.com`,
-    password: `CoordPass${i}!`,
+    email: `coord${i}@erp.local`,
+    password: defaultPassword,
     name: `Student Coordinator ${i}`,
     role: 'STUDENT',
     isCoordinator: true
@@ -69,8 +71,8 @@ for (let i = 1; i <= 20; i++) {
 // 4. Demo Volunteers (5)
 for (let i = 1; i <= 5; i++) {
   accounts.push({
-    email: `volunteer${i}@erp.com`,
-    password: `VolunteerPass${i}!`,
+    email: `volunteer${i}@erp.local`,
+    password: defaultPassword,
     name: `NSS Volunteer ${i}`,
     role: 'STUDENT',
     isCoordinator: false

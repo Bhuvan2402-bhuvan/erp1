@@ -379,17 +379,14 @@ vercel deploy --prod
 
 ---
 
-## 8. Test Accounts & Access Roster
+## 8. Account Security & Provisioning
 
-| Role | Email Address | Default Password | Scope / Permissions |
-|:---|:---|:---|:---|
-| **System Admin 1** | `admin1@erp.com` | `Admin@12345` | Full Platform & User Authority |
-| **System Admin 2** | `admin2@erp.com` | `Admin@12345` | Institutional Operations & Finance |
-| **Faculty Coordinator (CSE)** | `faculty.cse@erp.com` | `Faculty@12345` | CSE Unit Coordinator & Drive Manager |
-| **Faculty Coordinator (ECE)** | `faculty.ece@erp.com` | `Faculty@12345` | ECE Unit Coordinator & Drive Manager |
-| **Faculty Coordinator (MECH)** | `faculty.mech@erp.com` | `Faculty@12345` | MECH Unit Coordinator & Drive Manager |
-| **Student Coordinator** | `lead.cse1@erp.com` | `Student@12345` | Student Branch Lead (CSE) |
-| **Student Volunteer** | `student.cse1@erp.com` | `Student@12345` | Standard Volunteer Account (CSE) |
+To maintain institutional privacy and protect production systems:
+
+- **Credential Privacy**: Demo and administrative credentials are not published in public documentation.
+- **Initial Setup**: Super administrators provision initial accounts through secure environment variables (`SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`) or during database deployment.
+- **Role Quotas**: Account creation strictly enforces role quotas (4 Admins, 15 Faculty Coordinators, 20 Student Coordinators).
+- **Self-Registration**: Student volunteers register via `/signup` with email verification and require approval for elevated privileges.
 
 ---
 

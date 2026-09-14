@@ -57,10 +57,7 @@ export async function GET(req) {
         totalEvents: 5,
         openIssues: 0
       },
-      recentUsers: [
-        { id: 'u1', name: 'NSS Volunteer 1', email: 'volunteer1@erp.com', role: 'STUDENT', approvalStatus: 'APPROVED', createdAt: new Date().toISOString() },
-        { id: 'u2', name: 'Faculty Coordinator 1', email: 'faculty1@erp.com', role: 'FACULTY', approvalStatus: 'APPROVED', createdAt: new Date().toISOString() }
-      ],
+      recentUsers: [],
       upcomingEvents: [
         { id: 'e1', title: 'Blood Donation Drive 2026', date: new Date(Date.now() + 86400000).toISOString(), type: 'CAMP', status: 'UPCOMING', _count: { registrations: 12 } }
       ]

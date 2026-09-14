@@ -147,7 +147,7 @@ function LoginForm() {
                   required
                   autoFocus
                   autoComplete="username"
-                  placeholder="e.g. admin1@erp.com"
+                  placeholder="e.g. name@college.edu"
                   value={formData.email}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-9 pr-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-logo-teal focus:border-logo-teal text-sm dark:bg-slate-700 dark:text-white transition-all"

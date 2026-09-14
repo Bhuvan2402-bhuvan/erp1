@@ -17,6 +17,9 @@ manus/
 .DS_Store
 Thumbs.db
 *.zip
-test-db.js
+# Private Account Rosters & Credentials
+ACCOUNTS_ROSTER.txt
+*roster*.txt
+*accounts*.txt
 
 

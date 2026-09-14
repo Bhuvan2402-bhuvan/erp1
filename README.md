@@ -107,16 +107,11 @@ Visit `http://localhost:3000` to access the portal.
 
 ---
 
-## 👥 Demo Accounts Roster
+## 🔐 Access & Accounts
 
-| Role | Email | Password | Scope |
-|:---|:---|:---|:---|
-| **System Admin 1** | `admin1@erp.com` | `Admin@12345` | Institutional Master Admin |
-| **System Admin 2** | `admin2@erp.com` | `Admin@12345` | Operations & Financial Auditing |
-| **Faculty Coordinator (CSE)** | `faculty.cse@erp.com` | `Faculty@12345` | CSE Unit Lead & Drive Approver |
-| **Faculty Coordinator (ECE)** | `faculty.ece@erp.com` | `Faculty@12345` | ECE Unit Lead & Drive Approver |
-| **Student Coordinator (CSE)** | `lead.cse1@erp.com` | `Student@12345` | Student Branch Lead |
-| **Student Volunteer (CSE)** | `student.cse1@erp.com` | `Student@12345` | Verified Volunteer Account |
+Demo and test account credentials are **not published publicly** to protect institutional data privacy.
+
+> For access to a test environment, contact the project maintainer directly.
 
 ---
 

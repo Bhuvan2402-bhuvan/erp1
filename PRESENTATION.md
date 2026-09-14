@@ -217,7 +217,7 @@ Follow this structured script during your live presentation for a seamless showc
 4. Show the **Activity Feed** with unit-tagged photos (`CSE Unit`), **Events & Drives**, and the **Faculty & Officers Directory** tab.
 
 ### Step 2: Admin Academic Year Monitoring (2 Mins)
-1. Log in as **Admin 1** (`admin1@erp.com` / `Admin@12345`).
+1. Log in as a **System Administrator**.
 2. Navigate to **AY Monitoring** (`/admin/monitoring`).
 3. Click through the **Academic Year Pills** (`2025-2026`, `2024-2025`, `2023-2024`) to show instant re-calculation of volunteer counts, service hours, and event volumes.
 4. Highlight the **Department Performance Matrix** comparing all 10 branches.
@@ -231,33 +231,32 @@ Follow this structured script during your live presentation for a seamless showc
 5. Open the **"Add Financial Entry"** modal to show how new income or expense transactions are recorded with receipts.
 
 ### Step 4: Faculty Coordinator Event Operations & Photo Management (2 Mins)
-1. Switch to a **Faculty Coordinator** account (`faculty.cse@erp.com` / `Faculty@12345`).
+1. Switch to an authorized **Faculty Coordinator** account.
 2. Navigate to **Events** (`/faculty/events`).
 3. Toggle between **"My Unit Events"** and **"All NSS Units"**.
 4. Click **"Photos (X)"** on an event to show the photo management canvas, image compression, captions, and lightbox gallery.
 5. Click **"Manage & Attendance"** to demonstrate volunteer registration audits and status management.
 
 ### Step 5: Student Volunteer Experience & QR Scanner (2 Mins)
-1. Log in as a **Student Volunteer** (`student.cse1@erp.com` / `Student@12345`).
+1. Log in as an enrolled **Student Volunteer**.
 2. Navigate to **NSS Events** (`/student/events`).
 3. Click **"Scan Event Attendance QR"** to showcase the HTML5 mobile camera scanner.
 4. Navigate to **Portfolio** (`/student/portfolio`) to display the student's gamified achievement tier (Gold/Silver), total verified hours, and printable transcript.
 
 ---
 
-# 🔑 PART 3: Demo Accounts & Access Credentials
+# 🔑 PART 3: Role Governance & Access Privileges
 
-Use these pre-configured credentials during your presentation:
+The platform enforces strict role-based access control with capped quota limits:
 
-| Role | Email Address | Password | Department / Scope |
-|:---|:---|:---|:---|
-| **System Admin 1** | `admin1@erp.com` | `Admin@12345` | Master Platform Oversight |
-| **System Admin 2** | `admin2@erp.com` | `Admin@12345` | Operations & Financial Auditing |
-| **Faculty Coordinator (CSE)** | `faculty.cse@erp.com` | `Faculty@12345` | Computer Science Unit Coordinator |
-| **Faculty Coordinator (ECE)** | `faculty.ece@erp.com` | `Faculty@12345` | Electronics & Comm Unit Coordinator |
-| **Faculty Coordinator (MECH)** | `faculty.mech@erp.com` | `Faculty@12345` | Mechanical Eng Unit Coordinator |
-| **Student Coordinator** | `lead.cse1@erp.com` | `Student@12345` | CSE Student Branch Lead |
-| **Student Volunteer** | `student.cse1@erp.com` | `Student@12345` | Enrolled Volunteer (CSE) |
+| Role | Quota Limit | Responsibility Scope |
+|:---|:---:|:---|
+| **System Administrator** | Max 4 Accounts | Master Platform Oversight, Approvals & System Auditing |
+| **Faculty Coordinator** | Max 15 Accounts | Branch Operations, Financial Ledger & Drive Verification |
+| **Student Coordinator** | Max 20 Accounts | Student Leadership, Point Allocations & Misconduct Notices |
+| **Student Volunteer** | Open Registration | Event Enrolment, Attendance Scanning & Portfolio Generation |
+
+> 🔒 *Note: Production credentials and test logins are maintained securely in institution vaults and are not published in public repositories.*
 
 ---
 
