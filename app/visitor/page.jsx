@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Grid, Calendar, Award, ArrowLeft, Camera, Search, Filter,
-  MapPin, Eye, X, Star, Heart, MessageCircle, Bookmark, Share2, Shield, UserCheck, Sparkles, Building2, Users
+  MapPin, Eye, X, Star, Heart, MessageCircle, Bookmark, Share2, Shield, UserCheck, Sparkles, Building2
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 

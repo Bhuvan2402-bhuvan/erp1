@@ -1,0 +1,19 @@
+chore: remove dead code, clean console logs, unify sort logic
+
+- Remove DEFAULT_FACULTY_PROFILES fallback from app/page.jsx and lib/faculty-defaults.js import
+  * Home page now renders without fake sample faculty if DB is unavailable
+  * Stale two-condition sort (PC/PO only) replaced with unified roleOrder map (PC=0, PO=1, SC=2)
+
+- Remove 6 console.log PII leaks from lib/email.js
+  * Email addresses were being logged to server stdout on every email dispatch
+  * Replaced no-provider else branches with silent skip comments
+
+- Remove console.log from app/Providers.jsx service worker cleanup
+  * Was firing on every page load for every user
+
+- Unify sort logic in app/api/faculty-desk/route.js
+  * Removed misleading DB orderBy role:'asc' (alphabetic, not semantic)
+  * Replaced two-condition PC/PO sort with same roleOrder map as visitor API
+  * Ensures NSS_SC profiles now sort correctly in admin panel too
+
+- Remove unused Users lucide import from app/visitor/page.jsx

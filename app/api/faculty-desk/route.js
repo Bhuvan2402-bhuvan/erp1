@@ -13,17 +13,14 @@ export async function GET(req) {
 
     const profiles = await prisma.facultyDesk.findMany({
       where,
-      orderBy: [
-        { role: 'asc' }, // 'NSS_PC' comes before 'NSS_PO' alphabetically, or we sort explicitly
-        { sortOrder: 'asc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
     });
 
-    // Custom sort: NSS_PC first, then NSS_PO
+    const roleOrder = { NSS_PC: 0, NSS_PO: 1, NSS_SC: 2 };
     const sorted = profiles.sort((a, b) => {
-      if (a.role === 'NSS_PC' && b.role !== 'NSS_PC') return -1;
-      if (a.role !== 'NSS_PC' && b.role === 'NSS_PC') return 1;
+      const ra = roleOrder[a.role] ?? 1;
+      const rb = roleOrder[b.role] ?? 1;
+      if (ra !== rb) return ra - rb;
       return (a.sortOrder || 0) - (b.sortOrder || 0);
     });
 

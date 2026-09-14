@@ -11,7 +11,6 @@ export default function Providers({ children }) {
         navigator.serviceWorker.getRegistrations().then((registrations) => {
           for (let registration of registrations) {
             registration.unregister();
-            console.log('Unregistered service worker to guarantee fresh styles');
           }
         }).catch(() => {});
       }

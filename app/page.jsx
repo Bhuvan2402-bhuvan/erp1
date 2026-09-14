@@ -8,7 +8,6 @@ import LandingNavbar from '@/components/LandingNavbar';
 import LandingHero from '@/components/LandingHero';
 import LandingTestimonials from '@/components/LandingTestimonials';
 import LandingFaqs from '@/components/LandingFaqs';
-import { DEFAULT_FACULTY_PROFILES } from '@/lib/faculty-defaults';
 
 export default async function Home() {
   let stats = {
@@ -103,28 +102,23 @@ export default async function Home() {
     console.error('Failed to load landing page data from DB, using fallbacks:', err);
   }
 
-    let facultyProfiles = DEFAULT_FACULTY_PROFILES;
+    let facultyProfiles = [];
     try {
+      const roleOrder = { NSS_PC: 0, NSS_PO: 1, NSS_SC: 2 };
       const dbFaculty = await prisma.facultyDesk.findMany({
         where: { isVisible: true },
-        orderBy: [
-          { role: 'asc' },
-          { sortOrder: 'asc' },
-          { createdAt: 'asc' }
-        ]
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
       });
-      if (dbFaculty && dbFaculty.length > 0) {
-        facultyProfiles = dbFaculty.sort((a, b) => {
-          if (a.role === 'NSS_PC' && b.role !== 'NSS_PC') return -1;
-          if (a.role !== 'NSS_PC' && b.role === 'NSS_PC') return 1;
+      facultyProfiles = dbFaculty
+        .sort((a, b) => {
+          const ra = roleOrder[a.role] ?? 1;
+          const rb = roleOrder[b.role] ?? 1;
+          if (ra !== rb) return ra - rb;
           return (a.sortOrder || 0) - (b.sortOrder || 0);
-        }).map(p => ({
-          ...p,
-          achievements: Array.isArray(p.achievements) ? p.achievements : []
-        }));
-      }
-    } catch (e) {
-      console.error('Faculty desk query error, using defaults:', e);
+        })
+        .map(p => ({ ...p, achievements: Array.isArray(p.achievements) ? p.achievements : [] }));
+    } catch {
+      // DB unavailable — render without faculty section
     }
 
     const pcLeader = facultyProfiles.find(f => f.role === 'NSS_PC') || facultyProfiles[0];
